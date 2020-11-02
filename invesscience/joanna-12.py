@@ -1,15 +1,12 @@
 import pandas as pd
 import numpy as np
-
-
-
-
+import os
 
 def comps_founded_before():
     '''Modifying companies and founder table'''
-    companies = pd.read_csv("../raw_data/companies.csv")
-    relationships = pd.read_csv("../raw_data/relationships.csv")
-    founders = pd.read_csv("../raw_data/founders.csv")
+    companies = pd.read_csv(os.path.join('..',"raw_data","companies.csv"))
+    relationships = pd.read_csv(os.path.join('..',"raw_data","relationships.csv"))
+    founders = pd.read_csv(os.path.join('..',"raw_data","founders.csv"))
     print(companies.shape)
     print(founders.shape)
     founding = relationships[relationships.founder]
@@ -47,11 +44,4 @@ def comps_founded_before():
     print(founders.head())
 
     return founders, companies
-
-
-
-
-comps_founded_before()
-
-
 
