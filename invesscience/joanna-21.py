@@ -277,6 +277,3 @@ def degree_type_clean():
 
     return degrees
 
-
-
-degree_type_clean()
