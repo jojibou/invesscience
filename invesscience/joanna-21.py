@@ -2,11 +2,7 @@ import pandas as pd
 import numpy as np
 import os
 
-
-
-degrees = pd.read_csv(os.path.join('..',"raw_data","degrees.csv"))
-
-
+#Degree level
 def degree_clean(x):
     x_lower = str(x).lower()
     if x_lower =="degree":
@@ -249,13 +245,14 @@ def leveling(x):
         return "professional"
     if x in ['PhD']:
         return "phd"
-    if x in ['MBA', 'MS', 'JD', 'MA',
+    if x in ["MBA"]:
+        return "MBA"
+    if x in ['MS', 'JD', 'MA',
        'Master', 'Graduate', 'MD', 'Executive', 'LLM', 'MPHIL', 'MPA', 'MPH', 'MPP',
        'MM', 'MTECH', 'MPS', 'MHA']:
         return "graduate"
 
-def degree_type_clean():
-    degrees = pd.read_csv(os.path.join('..',"raw_data","degrees.csv"))
+def degree_type_clean(degrees):
     print(degrees.shape)
     degrees["degree_type"] = degrees.degree_type.map(degree_clean)
     degrees_clean = pd.DataFrame(degrees["degree_type"].value_counts())
@@ -276,4 +273,64 @@ def degree_type_clean():
     print(degrees.shape)
 
     return degrees
+
+
+def computer_science(x):
+    for i in ["computer","informatic","information","it","internet technology", "cs ", " cs", "software"]:
+        if i in x.lower():
+            return 1
+        return 0
+
+def cs_topic(degrees):
+    degrees["cs"] = degrees.subject.astype(str).map(computer_science)
+    print (degrees.sample(5))
+    print(degrees.shape)
+    return degrees
+
+
+
+def merge_people_level(people, degrees):
+    print(people.shape)
+    degrees = degree_type_clean(degrees)
+    degrees = cs_topic(degrees)
+    degrees_per_person = degrees.groupby("object_id").sum().drop("id", axis=1)
+    degrees_per_person["degree_count"] = degrees_per_person[["graduate","phd","professional","undergrad","MBA"]].sum(axis=1)
+    degrees_per_person = degrees_per_person.reset_index().rename(columns={"object_id":"person_object_id"})
+    degrees_per_person.cs = degrees_per_person.cs.map(lambda x: 1 if x >0 else 0)
+    people = people.merge(degrees_per_person.fillna(value=0),on="person_object_id", how="left")
+    people.loc[:,degrees_per_person.columns] = people.loc[:,degrees_per_person.columns].fillna(0)
+    print(people.shape)
+    print(people.sample(20))
+    return people
+
+def merge_company_level(people, degrees,companies, relationships):
+    people = merge_people_level(people, degrees)
+    relationships = relationships[relationships.founder][["person_object_id","relationship_object_id"]]\
+    .merge(people, on="person_object_id", how="left")
+    tmp = relationships[["relationship_object_id","phd",\
+    "MBA","cs","graduate","undergrad","professional","degree_count"]]\
+    .groupby("relationship_object_id",as_index=False).sum()
+    tmp["MBA_bool"] = tmp.MBA.map(lambda x: 1 if x > 0 else 0)
+    tmp["cs_bool"] = tmp.cs.map(lambda x: 1 if x > 0 else 0)
+    tmp["phd_bool"] = tmp.phd.map(lambda x: 1 if x > 0 else 0)
+    tmp2 = relationships.groupby("relationship_object_id",as_index=False)\
+    .count()[["relationship_object_id","person_object_id"]]\
+    .rename(columns={"person_object_id":"founder_count"})
+    tmp3 = tmp.merge(tmp2, on="relationship_object_id")
+    for i in ["phd","MBA","cs","graduate","undergrad","professional","degree_count"]:
+        tmp3[i] = tmp3[i]/ tmp3.founder_count
+    tmp3 = tmp3.rename(columns={"relationship_object_id":"id"})
+    companies = companies.merge(tmp3, how="left", on="id")
+    print(companies.shape)
+    print(companies.sample(20))
+    return companies
+
+
+
+#degrees = pd.read_csv(os.path.join('..',"raw_data","degrees.csv")).drop(columns=["updated_at","created_at"])
+#people = pd.read_csv(os.path.join('..',"raw_data","people.csv"))
+#relationships = pd.read_csv(os.path.join('..',"raw_data","relationships.csv"))
+#companies = pd.read_csv(os.path.join('..',"raw_data","companies.csv"))
+
+#merge_company_level(people, degrees,companies,relationships)
 
