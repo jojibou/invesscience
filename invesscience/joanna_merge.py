@@ -5,6 +5,7 @@ from invesscience.joanna_target import get_company_target
 from invesscience.joanna_12 import comps_founded_before
 from invesscience.joanna_21 import merge_company_level
 from invesscience.felipe_1 import time_serie_investment_new
+from invesscience.felipe_10 import n_female_founders
 
 
 
@@ -54,10 +55,16 @@ companies = merge_company_level(people, degrees,companies,relationships)
 print(companies.head())
 print(companies.shape)
 
-# get mean companies founded before and total by founders
-companies = comps_founded_before(companies, relationships, founders) #.sort_values(by="mean_comp_founded_before",ascending=False)
+#get female ratio in founders
+companies = n_female_founders(companies, founders, relationships)
 
-print(companies.sample(10))
+print(companies.head())
+print(companies.shape)
+
+# get mean companies founded before and total by founders
+companies = comps_founded_before(companies, relationships, founders)#.sort_values(by="female_ratio",ascending=False)
+
+print(companies.head(10))
 print(companies.shape)
 print(companies.columns)
 print(companies.info())
