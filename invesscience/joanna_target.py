@@ -129,6 +129,7 @@ def get_company_target(ipos, acq, rounds,companies,reference="a"):
     companies = pd.concat([companies_ipo_acq,companies_no_exit], axis=0)
     companies = companies.reset_index().sort_values(by="exit_date").drop_duplicates("id")
 
+
     #print(companies.sample(20))
 
     return companies
