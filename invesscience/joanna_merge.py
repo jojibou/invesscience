@@ -62,5 +62,4 @@ print(companies.shape)
 print(companies.columns)
 print(companies.info())
 
-companies.to_csv("../raw_data/test.csv", index=False)
 
