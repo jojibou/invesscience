@@ -66,7 +66,7 @@ class Trainer(object):
         self.split = self.kwargs.get("split", True)  # cf doc above
         if self.split:
             self.X_train, self.X_val, self.y_train, self.y_val = train_test_split(self.X_train, self.y_train,
-                                                                                  test_size=0.3)
+                                                                                  test_size=0.2)
         self.nrows = self.X_train.shape[0]  # nb of rows to train on
         self.log_kwargs_params()
         self.log_machine_specs()
@@ -156,7 +156,7 @@ class Trainer(object):
         self.mlflow_log_metric("f1score_train", f1_train)
         if self.split:
             f1_val = self.compute_f1(self.X_val, self.y_val, show=True)
-            self.mlflow_log_metric("f1score_train", f1_val)
+            self.mlflow_log_metric("f1score_val", f1_val)
             print(colored("f1 train: {} || f1 val: {}".format(f1_train, f1_val), "blue"))
         else:
             print(colored("f1 train: {}".format(f1_train), "blue"))
@@ -239,7 +239,7 @@ if __name__ == "__main__":
 
 
 
-    for estimator_iter in ['LogisticRegression']:
+    for estimator_iter in ['SVC']:
 
 
         #params = dict(nrows=10000,
@@ -273,7 +273,7 @@ if __name__ == "__main__":
         print("shape: {}".format(X_train.shape))
         print("size: {} Mb".format(X_train.memory_usage().sum() / 1e6))
         # Train and save model, locally and
-        t = Trainer(X=X_train, y=y_train ) #**params)
+        t = Trainer(X=X_train, y=y_train, **params)
         del X_train, y_train
 
         print(colored("############  Training model   ############", "red"))
