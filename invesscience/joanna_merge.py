@@ -6,6 +6,7 @@ from invesscience.joanna_12 import comps_founded_before
 from invesscience.joanna_21 import merge_company_level
 from invesscience.felipe_1 import time_serie_investment_new
 from invesscience.felipe_10 import n_female_founders
+from invesscience.joanna_18 import merge_company_level_uni
 
 
 def get_training_data(reference="a"):
@@ -17,6 +18,7 @@ def get_training_data(reference="a"):
     founders = pd.read_csv(os.path.join('..',"raw_data","founders.csv"))
     people = pd.read_csv(os.path.join('..',"raw_data","people.csv"))
     degrees = pd.read_csv(os.path.join('..',"raw_data","degrees.csv")).drop(columns=["updated_at","created_at"])
+    ranking = pd.read_csv(os.path.join("..","raw_data","support","2018-university-ranking-2.csv"))
 
     #get company table with target
     companies=get_company_target(ipos, acq, rounds,companies,reference)
@@ -47,6 +49,9 @@ def get_training_data(reference="a"):
 
     #get diplomas of founding team
     companies = merge_company_level(people, degrees,companies,relationships)
+
+    #get university ranking of founding team
+    companies = merge_company_level_uni(people, degrees, companies, relationships, ranking)
 
     #print(companies.head())
     #print(companies.shape)
