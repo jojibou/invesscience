@@ -44,7 +44,7 @@ def get_training_data(reference="a"):
     if type(reference) == str:
         companies = time_serie_investment_new(rounds, companies, reference)
 
-    #print(companies.head())
+    #print(companies.sort_values(by="rounds_before_a",ascending=False).head())
     #print(companies.shape)
 
     #get diplomas of founding team
