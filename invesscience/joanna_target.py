@@ -43,7 +43,7 @@ def target_ipo(ipos, rounds,companies,reference="a"):
     tmp3["exit"]="ipo"
 
     companies = companies.merge(tmp3, how="inner", on="id") #.sort_values(by="public_at")
-    print(companies.shape)
+    #print(companies.shape)
 
     return companies
 

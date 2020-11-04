@@ -60,6 +60,10 @@ def get_training_data(reference="a"):
     # get mean companies founded before and total by founders
     companies = comps_founded_before(companies, relationships, founders)#.sort_values(by="female_ratio",ascending=False)
 
+    # target encoding
+    exits ={"acquisition":1, "ipo":1, "no exit":0}
+    companies["target"] = companies.exit.map(exits)
+
     return companies
 
 if __name__ == "__main__":
