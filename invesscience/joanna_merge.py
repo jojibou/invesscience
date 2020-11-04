@@ -29,33 +29,33 @@ def get_training_data(reference="a"):
 
     #filter series a before certain date
     companies = companies[companies[f"date_series_{reference}"]<'2009']
-    print(companies.head())
-    print(companies.shape)
+    #print(companies.head())
+    #print(companies.shape)
 
     #get time between founding date and reference round
     companies.founded_at = pd.to_datetime(companies.founded_at)
     companies[f'timediff_founded_series_{reference}'] = (companies[f"date_series_{reference}"] - companies.founded_at)/np.timedelta64(12, 'M')
-    print(companies.head())
-    print(companies.shape)
+    #print(companies.head())
+    #print(companies.shape)
 
     # get number of rounds before reference round (if reference is str if not not usefull)
     if type(reference) == str:
         companies = time_serie_investment_new(rounds, companies, reference)
 
-    print(companies.head())
-    print(companies.shape)
+    #print(companies.head())
+    #print(companies.shape)
 
     #get diplomas of founding team
     companies = merge_company_level(people, degrees,companies,relationships)
 
-    print(companies.head())
-    print(companies.shape)
+    #print(companies.head())
+    #print(companies.shape)
 
     #get female ratio in founders
     companies = n_female_founders(companies, founders, relationships)
 
-    print(companies.head())
-    print(companies.shape)
+    #print(companies.head())
+    #print(companies.shape)
 
     # get mean companies founded before and total by founders
     companies = comps_founded_before(companies, relationships, founders)#.sort_values(by="female_ratio",ascending=False)

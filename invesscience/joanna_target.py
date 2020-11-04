@@ -81,7 +81,7 @@ def target_acq(acq, rounds,companies,reference="a"):
     tmp3["exit"]="acquisition"
 
     companies = companies.merge(tmp3, how="inner", on="id") #.sort_values(by="acquired_at")
-    print(companies.shape)
+    #print(companies.shape)
 
     return companies
 
@@ -112,7 +112,7 @@ def target_no_exit(rounds, companies, reference="a"):
     tmp3["funding_round_code"] = reference
     tmp3["exit"]="no exit"
     tmp3["exit_date"]=np.nan
-    print(tmp3.shape)
+    #print(tmp3.shape)
 
     return tmp3
 
@@ -126,7 +126,7 @@ def get_company_target(ipos, acq, rounds,companies,reference="a"):
     companies_no_exit = companies.set_index('id').drop(rows_exit).reset_index().rename(columns={"id":"object_id"})
     companies_no_exit = target_no_exit(rounds, companies_no_exit,reference).set_index("id")
 
-    companies = pd.concat([companies_ipo_acq,companies_no_exit], axis=0)
+    companies = pd.concat([companies_ipo_acq,companies_no_exit], axis=0, sort=True)
     companies = companies.reset_index().sort_values(by="exit_date").drop_duplicates("id")
 
 
