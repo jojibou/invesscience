@@ -6,7 +6,7 @@ import category_encoders as ce
 import joblib
 import mlflow
 import pandas as pd
-
+import os
 
 from memoized_property import memoized_property
 from mlflow.tracking import MlflowClient
@@ -26,6 +26,7 @@ from sklearn.pipeline import Pipeline, make_pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from termcolor import colored
 from xgboost import XGBRegressor
+from invesscience.utils import compute_f1, simple_time_tracker
 
 
 
@@ -224,7 +225,8 @@ class Trainer(object):
 if __name__ == "__main__":
     warnings.simplefilter(action='ignore', category=FutureWarning)
     # Get and clean data
-    experiment = "Invesscience batch #463"
+    experiment = "Invesscience_batch_#463"
+
 
     if "YOURNAME" in experiment:
         print(colored("Please define MlFlow experiment variable with your own name", "red"))
@@ -232,6 +234,10 @@ if __name__ == "__main__":
 
 
         #Iterando sobre los parametros
+
+    #
+
+
 
     for estimator_iter in ['LogisticRegression']:
 
@@ -244,13 +250,22 @@ if __name__ == "__main__":
                  # distance_type="haversine",
                  # feateng=["distance", "time_features"])
 
-        params = dict(estimator = estimator_iter, mlflow = True, experiment_name=experiment)
+
+
+
+
+
+
+
+        params = dict(estimator = estimator_iter,local=False, split=True,  mlflow = True, experiment_name=experiment)
 
 
         print("############   Loading Data   ############")
 
         df = get_training_data(reference='a')
         df = df.drop(columns= ['founded_at','normalized_name', 'description', 'exit', 'exit_date', 'date_series_a', 'closed_at'])
+
+        df= df.dropna()
 
         y_train = df["target"]
         X_train = df.drop(columns =['target', 'category_code' , 'country_code', 'state_code', 'id']) #Change when we have categorical var
