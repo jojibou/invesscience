@@ -151,16 +151,16 @@ class Trainer(object):
         self.mlflow_log_metric("train_time", int(time.time() - tic))
 
     def evaluate(self):
-        rmse_train = self.compute_rmse(self.X_train, self.y_train)
-        self.mlflow_log_metric("rmse_train", rmse_train)
+        f1_train = self.compute_f1(self.X_train, self.y_train)
+        self.mlflow_log_metric("f1score_train", f1_train)
         if self.split:
-            rmse_val = self.compute_rmse(self.X_val, self.y_val, show=True)
-            self.mlflow_log_metric("rmse_val", rmse_val)
-            print(colored("rmse train: {} || rmse val: {}".format(rmse_train, rmse_val), "blue"))
+            f1_val = self.compute_f1(self.X_val, self.y_val, show=True)
+            self.mlflow_log_metric("f1score_train", f1_val)
+            print(colored("f1 train: {} || f1 val: {}".format(f1_train, f1_val), "blue"))
         else:
-            print(colored("rmse train: {}".format(rmse_train), "blue"))
+            print(colored("f1 train: {}".format(f1_train), "blue"))
 
-    def compute_rmse(self, X_test, y_test, show=False):
+    def compute_f1(self, X_test, y_test, show=False):
         if self.pipeline is None:
             raise ("Cannot evaluate an empty pipeline")
         y_pred = self.pipeline.predict(X_test)
@@ -168,8 +168,8 @@ class Trainer(object):
             res = pd.DataFrame(y_test)
             res["pred"] = y_pred
             print(colored(res.sample(5), "blue"))
-        rmse = compute_rmse(y_pred, y_test)
-        return round(rmse, 3)
+        f1 = compute_f1(y_pred, y_test)
+        return round(f1, 3)
 
     def save_model(self):
         """Save the model into a .joblib format"""
