@@ -2,13 +2,8 @@ import pandas as pd
 import numpy as np
 import os
 
-def comps_founded_before():
+def comps_founded_before(companies, relationships, founders):
     '''Modifying companies and founder table'''
-    companies = pd.read_csv(os.path.join('..',"raw_data","companies.csv"))
-    relationships = pd.read_csv(os.path.join('..',"raw_data","relationships.csv"))
-    founders = pd.read_csv(os.path.join('..',"raw_data","founders.csv"))
-    print(companies.shape)
-    print(founders.shape)
     founding = relationships[relationships.founder]
     founding = founding.rename(columns={"relationship_object_id":"id"})
     merged = companies.merge(founding, how="left", on="id")
@@ -38,10 +33,16 @@ def comps_founded_before():
     ##new column to companies with mean_comp_founded_before
     companies = companies.merge(tmp, how="left", on="id")
 
-    print(companies.shape)
-    print(founders.shape)
-    print(companies.head())
-    print(founders.head())
+    #print(companies.shape)
+    #print(founders.shape)
+    #print(companies.head())
+    #print(founders.head())
 
-    return founders, companies
+    return companies
 
+if __name__ == "__main__":
+    companies = pd.read_csv(os.path.join('..',"raw_data","companies.csv"))
+    relationships = pd.read_csv(os.path.join('..',"raw_data","relationships.csv"))
+    founders = pd.read_csv(os.path.join('..',"raw_data","founders.csv"))
+
+    comps_founded_before(companies, relationships, founders)

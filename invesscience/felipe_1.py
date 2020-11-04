@@ -29,3 +29,18 @@ def time_serie_investments(rounds, reference='a'):
     rounds = rounds.merge(tmp3, how="left", on="object_id")
     rounds[f'time_serie_{reference}_investment'] =  -(rounds[f'date_series_{reference}'] - rounds.funded_at)/np.timedelta64(12, 'M')
     return rounds
+
+
+def time_serie_investment_new(rounds,companies,reference="a"):
+    '''same goal as before but adapted to dataframe gotten from merge.py'''
+    tmp1 = companies.rename(columns={"id":"object_id"}).merge(rounds,how="left", on="object_id")
+    tmp1.funded_at = pd.to_datetime(tmp1.funded_at)
+    tmp1[f'date_series_{reference}'] = pd.to_datetime(tmp1[f'date_series_{reference}'])
+    tmp1['time_series_investment'] =  (tmp1.funded_at - tmp1[f'date_series_{reference}'])/np.timedelta64(12, 'M')
+    tmp1 = tmp1[tmp1.time_series_investment <0].drop_duplicates()
+    tmp1 = tmp1.groupby("object_id",as_index=False).count()[["object_id","id"]]\
+    .rename(columns={"id": f"rounds_before_{reference}","object_id":"id"})
+    companies = companies.merge(tmp1, how="left", on="id")
+    companies[f"rounds_before_{reference}"] = companies[f"rounds_before_{reference}"].fillna(0)
+    return companies
+
