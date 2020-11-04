@@ -38,9 +38,23 @@ def time_serie_investment_new(rounds,companies,reference="a"):
     tmp1[f'date_series_{reference}'] = pd.to_datetime(tmp1[f'date_series_{reference}'])
     tmp1['time_series_investment'] =  (tmp1.funded_at - tmp1[f'date_series_{reference}'])/np.timedelta64(12, 'M')
     tmp1 = tmp1[tmp1.time_series_investment <0].drop_duplicates()
-    tmp1 = tmp1.groupby("object_id",as_index=False).count()[["object_id","id"]]\
+    tmp1.raised_amount_usd = tmp1.raised_amount_usd.fillna(0)
+    tmp1.participants = tmp1.raised_amount_usd.fillna(0)
+    tmp2 = tmp1.groupby("object_id",as_index=False).count()[["object_id","id"]]\
     .rename(columns={"id": f"rounds_before_{reference}","object_id":"id"})
-    companies = companies.merge(tmp1, how="left", on="id")
+    tmp3 = tmp1.groupby("object_id",as_index=False).sum()[["object_id","raised_amount_usd","participants"]]\
+    .rename(columns={"raised_amount_usd": f"raised_before_{reference}","object_id":"id","participants":f"participants_before_{reference}"})
+    tmp4 = tmp2.merge(tmp3).applymap(lambda x: -1 if x==0 else x)
+    companies = companies.merge(tmp4, how="left", on="id")
     companies[f"rounds_before_{reference}"] = companies[f"rounds_before_{reference}"].fillna(0)
+    companies[f"raised_before_{reference}"] = companies[f"raised_before_{reference}"].fillna(0)
+    companies[f"raised_before_{reference}"] = companies[f"raised_before_{reference}"].map(lambda x: np.nan if x==-1 else x)
+    companies[f"participants_before_{reference}"] = companies[f"raised_before_{reference}"].fillna(0)
+    companies[f"participants_before_{reference}"] = companies[f"participants_before_{reference}"].map(lambda x: np.nan if x==-1 else x)
+
+
+
+
+
     return companies
 
