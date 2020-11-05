@@ -10,6 +10,7 @@ from invesscience.joanna_18 import merge_company_level_uni
 
 
 def get_training_data(reference="a"):
+
     path = os.path.dirname(os.path.dirname(__file__))
     acq = pd.read_csv(os.path.join(path,"raw_data","acquisitions.csv"))
     ipos = pd.read_csv(os.path.join(path,"raw_data","ipos.csv"))
