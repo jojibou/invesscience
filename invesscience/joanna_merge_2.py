@@ -8,6 +8,7 @@ from invesscience.joanna_21 import merge_company_level
 from invesscience.felipe_1 import time_serie_investment_new
 from invesscience.felipe_10 import n_female_founders
 from invesscience.joanna_18 import merge_company_level_uni
+from invesscience.joanna_14 import comps_worked_before
 
 
 def get_training_data(reference="a"):
@@ -27,7 +28,7 @@ def get_training_data(reference="a"):
 
     # initial feature selection
     companies = companies[["id",'normalized_name','category_code', "founded_at",\
-    'description', "closed_at",'exit', 'exit_date',\
+    'description', "closed_at", "status", 'exit', 'exit_date',\
       'country_code', "state_code",\
       f"date_series_{reference}", f"participants_{reference}", f"raised_amount_usd_{reference}"]]
 
@@ -66,6 +67,9 @@ def get_training_data(reference="a"):
 
     # get mean companies founded before and total by founders
     companies = comps_founded_before(companies, relationships, founders)#.sort_values(by="female_ratio",ascending=False)
+
+    # get mean companies worked at before by founders
+    companies = comps_worked_before(companies, relationships, founders)
 
     # target encoding
     exits ={"acquisition":1, "ipo":1, "no exit":0}
