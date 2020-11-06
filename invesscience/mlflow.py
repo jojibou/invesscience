@@ -21,7 +21,7 @@ from sklearn.pipeline import Pipeline, make_pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from termcolor import colored
 from xgboost import XGBRegressor
-from invesscience.utils import compute_f1, simple_time_tracker, lean_data
+from invesscience.utils import compute_f1, simple_time_tracker, clean_data
 from invesscience.joanna_merge import get_training_data
 from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
@@ -114,82 +114,91 @@ class Trainer(object):
     def get_imputer(self):
         imputer = self.kwargs.get("imputer", self.IMPUTER)
         if imputer == "SimpleImputer":
-            imputer = SimpleImputer()
+            imputer_use = SimpleImputer()
         if imputer == "KNNImputer":
-            imputer = KNNImputer()
+            imputer_use = KNNImputer()
 
 
-        estimator_params = self.kwargs.get("imputer_params", {})
+        imputer_params = self.kwargs.get("imputer_params", {})
         self.mlflow_log_param("imputer", imputer)
-        imputer.set_params(**imputer_params)
-        print(colored(imputer.__class__.__name__, "blue"))
+        imputer_use.set_params(**imputer_params)
+        print(colored(imputer_use.__class__.__name__, "blue"))
 
-        return imputer
+        return imputer_use
 
-    SCALER_AMOUNT = 'RobustScaler'
-    SCALER_PROFESSIONALS = 'MinMaxScaler'
-    SCALER_TIME = 'StandardScaler'
-    SCALER_PARTICIPANTS = 'StandardScaler'
+
 
     def get_scaler_raised_amount(self):
         scaler_amount = self.kwargs.get("scaler_amount", self.SCALER_AMOUNT)
-        if scanler_amount == "RobustScaler":
-            scaler = RobustScaler()
-        if imputer == "KNNImputer":
-            imputer = KNNImputer()
+        if scaler_amount == "RobustScaler":
+            scaler_use = RobustScaler()
+        elif scaler_amount == "StandardScaler":
+            scaler_use = StandardScaler()
+        elif scaler_amount == 'MinMaxScaler':
+            scaler_use = MinMaxScaler()
+
+        scaler_amount_params = self.kwargs.get("scaler_amount_params", {})
+        self.mlflow_log_param("scaler_amount", scaler_amount)
+        scaler_use.set_params(**scaler_amount_params)
+        print(colored(scaler_use.__class__.__name__, "blue"))
+
+        return scaler_use
 
 
-        estimator_params = self.kwargs.get("imputer_params", {})
-        self.mlflow_log_param("imputer", imputer)
-        imputer.set_params(**imputer_params)
-        print(colored(imputer.__class__.__name__, "blue"))
+    def get_scaler_professionals(self):
+        scaler_professionals = self.kwargs.get("scaler_professionals", self.SCALER_PROFESSIONALS)
+        if scaler_professionals == "RobustScaler":
+            scaler_use = RobustScaler()
+        elif scaler_professionals == "StandardScaler":
+            scaler_use = StandardScaler()
+        elif scaler_professionals == 'MinMaxScaler':
+            scaler_use = MinMaxScaler()
 
-        return imputer
+        scaler_professionals_params = self.kwargs.get("scaler_professionals_params", {})
+        self.mlflow_log_param("scaler_professionals", scaler_professionals)
+        scaler_use.set_params(**scaler_professionals_params)
+        print(colored(scaler_use.__class__.__name__, "blue"))
 
+        return scaler_use
+
+    def get_scaler_time(self):
+        scaler_time = self.kwargs.get("scaler_time", self.SCALER_TIME)
+        if scaler_time == "RobustScaler":
+            scaler_use = RobustScaler()
+        elif scaler_time == "StandardScaler":
+            scaler_use = StandardScaler()
+        elif scaler_time == 'MinMaxScaler':
+            scaler_use = MinMaxScaler()
+
+        scaler_time_params = self.kwargs.get("scaler_time_params", {})
+        self.mlflow_log_param("scaler_time", scaler_time)
+        scaler_use.set_params(**scaler_time_params)
+        print(colored(scaler_use.__class__.__name__, "blue"))
+
+        return scaler_use
+
+
+    def get_scaler_participant(self):
+        scaler_participants = self.kwargs.get("scaler_participants", self.SCALER_PARTICIPANTS)
+        if scaler_participants == "RobustScaler":
+            scaler_use = RobustScaler()
+        elif scaler_participants == "StandardScaler":
+            scaler_use = StandardScaler()
+        elif scaler_participants == 'MinMaxScaler':
+            scaler_use = MinMaxScaler()
+
+        scaler_participant_params = self.kwargs.get("scaler_participant_params", {})
+        self.mlflow_log_param("scaler_participants", scaler_participants)
+        scaler_use.set_params(**scaler_participant_params)
+        print(colored(scaler_use.__class__.__name__, "blue"))
+
+        return scaler_use
 
 
     def set_pipeline(self):
-        #dist = self.kwargs.get("distance_type", "haversine")
-        #feateng_steps = self.kwargs.get("feateng", ["distance", "time_features"])
-
-        # Define feature engineering pipeline blocks here
-
-
-        #pipe_time_features = make_pipeline(TimeFeaturesEncoder(time_column='pickup_datetime'),
-                                           #OneHotEncoder(handle_unknown='ignore'))
-        #pipe_distance = make_pipeline(DistanceTransformer(distance_type=dist), StandardScaler())
-        #pipe_geohash = make_pipeline(AddGeohash(), ce.HashingEncoder())
-
-        # Add new feature engineer Above
-        #pipe_direction =
-        #pipe_distance_to_center =
-
-        # Define default feature engineering blocs
-        #feateng_blocks = [
-            #('distance', pipe_distance, list(DIST_ARGS.values())),
-            #('time_features', pipe_time_features, ['pickup_datetime']),
-            #('geohash', pipe_geohash, list(DIST_ARGS.values())),
-            #('direction', pipe_direction, list(DIST_ARGS.values())),
-            #('distance_to_center', pipe_distance_to_center, list(DIST_ARGS.values())),
-        #]
-        # Filter out some bocks according to input parameters
-        #for bloc in feateng_blocks:
-            #if bloc[0] not in feateng_steps:
-                #feateng_blocks.remove(bloc)
-
-        #features_encoder = ColumnTransformer(feateng_blocks, n_jobs=None, remainder="drop")
-
-
-
-
-        #self.pipeline = Pipeline(steps=[
-                   # ('features', features_encoder),
-                    #('rgs', self.get_estimator())],
-                          #       )
 
         #Column spliting
-        categorical_features = list(companies.select_dtypes('object').columns)
-        numerical_features = columnas[0:-4]
+        categorical_features = list(self.X_train.select_dtypes('object').columns)
 
         top_features_num = ['top_5', 'top_20','top_50']
         boolean_features = ['MBA_bool', 'cs_bool', 'phd_bool' ,'top_5_bool', 'top_20_bool', 'top_50_bool']
@@ -203,27 +212,45 @@ class Trainer(object):
 
         #Defining imputers
 
-        notdegrees_imputer = KNNImputer()
-
-        raised_amount_scaler = RobustScaler()
-        profesionals_scaler = MinMaxScaler()
-
-        timediff_scaler = StandardScaler()
-        participant_scaler = StandardScaler()
+        notdegrees_imputer = self.get_imputer()
+        raised_amount_scaler = self.get_scaler_raised_amount()
+        profesionals_scaler = self.get_scaler_professionals()
+        timediff_scaler = self.get_scaler_time()
+        participant_scaler = self.get_scaler_participant()
 
 
+        #pipes for each feature
 
+        pipe_amounts = Pipeline([('raised_amount_imputer', notdegrees_imputer),
+                                 ('raised_amount_scaler', raised_amount_scaler)])
 
+        pipe_categorical = Pipeline([('ohe', OneHotEncoder(handle_unknown='ignore'))])
 
+        pipe_professionals = Pipeline([('profesionals_scaler', profesionals_scaler)])
 
+        pipe_time = Pipeline([('time_imput', notdegrees_imputer),
+                              ('timediff_scaler', timediff_scaler)])
 
+        pipe_participants =  Pipeline([('participant_imputer', notdegrees_imputer ),
+                                      ('participant_scaler', participant_scaler)])
 
+        #process
 
+        feateng_blocks = [ ('participant_scaler', pipe_participants, participant_feature),
+                           ('investment_scaler', pipe_amounts, investment_amount_features),# cambiar en caso de 0
+                           ('timediff_scaler', pipe_time, time_feature),
+                           ('profesionals_scaler', pipe_professionals, professional_features),
+                           ('top_scale', MinMaxScaler(), top_features_num), #just to stablish order of output columns
+                           ('bolean_var',  MinMaxScaler(), boolean_features), #just to stablish order of output columns
+                           ('cat_pipe', pipe_categorical, categorical_features)]
 
+        #Columntransformer keeping order
+        preprocessor = ColumnTransformer(feateng_blocks)
 
-        self.pipeline = Pipeline(steps=[
-                    ('rgs', self.get_estimator())],
-                                 )
+        #final_pipeline
+        self.pipeline = Pipeline(steps = [('preprocessing', preprocessor),
+                            ('rgs', self.get_estimator())] )
+
 
     @simple_time_tracker
     def train(self):
@@ -311,7 +338,7 @@ if __name__ == "__main__":
     experiment = "Invesscience_batch_#463"
 
 
-    columnas = ['participants_a','raised_amount_usd_a', 'raised_before_a', 'rounds_before_a', 'timediff_founded_series_a', 'phd', 'MBA', 'cs',
+    columnas = ['participants_a','participants_before_a','raised_amount_usd_a', 'raised_before_a', 'rounds_before_a', 'timediff_founded_series_a', 'phd', 'MBA', 'cs',
                                                         'graduate', 'undergrad', 'professional', 'degree_count',
                                                         'founder_count', 'n_female_founders','female_ratio',
                                                         'mean_comp_founded_ever', 'mean_comp_founded_before', \
@@ -328,29 +355,18 @@ if __name__ == "__main__":
     for estimator_iter in ['SVC']:
 
 
-        #params = dict(nrows=10000,
-                  #local=False,  # set to False to get data from GCP (Storage or BigQuery)
-                 # estimator=estimator_iter,
-                 # mlflow=True,  # set to True to log params to mlflow
-                 # experiment_name=experiment,
-                 # distance_type="haversine",
-                 # feateng=["distance", "time_features"])
-
-
-
-
-
-
-
-
-        params = dict(estimator = estimator_iter,local=False, split=True,  mlflow = True, experiment_name=experiment, imputer= 'SimpleImputer',
-                        imputer_params = {}, ) #agregar
+        params = dict(estimator = estimator_iter, estimator_params ={}, local=False, split=True,  mlflow = True, experiment_name=experiment,
+         imputer= 'SimpleImputer', imputer_params = {}, scaler_professionals= 'MinMaxScaler' , scaler_professionals_params = {},
+         scaler_time= 'StandardScaler', scaler_time_params={}, scaler_amount='RobustScaler', scaler_amount_params={} , scaler_participants='StandardScaler',
+         scaler_participant_params={} ) #agregar
 
 
         print("############   Loading Data   ############")
 
-        df = clean_data(reference='a')
+        df = clean_data('a')
         df = df[columnas]
+        print(df.columns)
+
 
 
         y_train = df["target"]

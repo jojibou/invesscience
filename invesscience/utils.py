@@ -4,8 +4,9 @@ import time
 from sklearn.metrics import recall_score
 from sklearn.metrics import precision_score
 from sklearn.metrics import f1_score
-
-
+import os
+from invesscience.joanna_merge import get_training_data
+import pandas as pd
 
 
 def compute_precision(y_pred, y_true):
@@ -56,7 +57,7 @@ def clean_data(reference):
     #henri df
 
 
-    df = pd.read_csv(os.path.join(path,"raw_data","datanamed_completed.csv"), sep=';', header=1)
+    df = pd.read_csv(os.path.join(path,"raw_data","datanamed_completed.csv"), sep=';', header=1)[['id','state_code']]
 
     merge_1 = companies.merge(df, how ='left', on = 'id')
     dict2 = merge_1.state_code_x.reset_index(drop=True).to_dict()
@@ -96,7 +97,7 @@ def clean_data(reference):
     merge_2 = merge_2.drop(columns = ['state_code_y', 'state_code_x', 'country_code_y', 'country_code_x'])
 
 
-    # Completing the categories
+    # # Completing the categories
 
     df =pd.read_csv(os.path.join(path,"raw_data","categories_filled.csv"), sep=';')[['id', 'category_code']]
 
@@ -114,3 +115,4 @@ def clean_data(reference):
 
     return merge_3.set_index('id')
 
+    return merge_3

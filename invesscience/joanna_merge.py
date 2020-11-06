@@ -10,6 +10,7 @@ from invesscience.felipe_10 import n_female_founders
 from invesscience.joanna_18 import merge_company_level_uni
 from invesscience.joanna_14 import comps_worked_before
 
+
 def get_training_data(reference="a"):
 
     path = os.path.dirname(os.path.dirname(__file__))
@@ -22,23 +23,12 @@ def get_training_data(reference="a"):
     people = pd.read_csv(os.path.join(path,"raw_data","people.csv"))
     degrees = pd.read_csv(os.path.join(path,"raw_data","degrees.csv")).drop(columns=["updated_at","created_at"])
     ranking = pd.read_csv(os.path.join(path,"raw_data","support","2018-university-ranking-2.csv"))
-
-    # ipos = pd.read_csv(os.path.join('..',"raw_data","ipos.csv"))
-    # acq = pd.read_csv(os.path.join('..',"raw_data","acquisitions.csv"))
-    # rounds = pd.read_csv(os.path.join('..',"raw_data","funding-rounds.csv"))
-    # companies = pd.read_csv(os.path.join('..',"raw_data","companies.csv"))
-    # relationships = pd.read_csv(os.path.join('..',"raw_data","relationships.csv"))
-    # founders = pd.read_csv(os.path.join('..',"raw_data","founders.csv"))
-    # people = pd.read_csv(os.path.join('..',"raw_data","people.csv"))
-    # degrees = pd.read_csv(os.path.join('..',"raw_data","degrees.csv")).drop(columns=["updated_at","created_at"])
-    # ranking = pd.read_csv(os.path.join("..","raw_data","support","2018-university-ranking-2.csv"))
-
     #get company table with target
     companies=get_company_target(ipos, acq, rounds,companies,reference)
 
     # initial feature selection
     companies = companies[["id",'normalized_name','category_code', "founded_at",\
-    'description', "closed_at",'status', 'exit', 'exit_date',\
+    'description', "closed_at", "status", 'exit', 'exit_date',\
       'country_code', "state_code",\
       f"date_series_{reference}", f"participants_{reference}", f"raised_amount_usd_{reference}"]]
 
