@@ -1,35 +1,38 @@
 import multiprocessing
 import time
 import warnings
-
 import category_encoders as ce
 import joblib
 import mlflow
 import pandas as pd
 import os
-
 from memoized_property import memoized_property
 from mlflow.tracking import MlflowClient
 from psutil import virtual_memory
 from sklearn.compose import ColumnTransformer
-
 from sklearn.svm import SVC
 from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
 from sklearn.linear_model import LogisticRegression
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.tree import DecisionTreeClassifier
-
 from sklearn.ensemble import RandomForestClassifier
-
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline, make_pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from termcolor import colored
 from xgboost import XGBRegressor
-
-
 from invesscience.utils import compute_f1, simple_time_tracker, lean_data
 from invesscience.joanna_merge import get_training_data
+from sklearn.pipeline import Pipeline
+from sklearn.compose import ColumnTransformer
+from sklearn.impute import KNNImputer
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import RobustScaler
+from sklearn.preprocessing import StandardScaler
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
 
 
 
@@ -39,6 +42,11 @@ MLFLOW_URI = "https://mlflow.lewagon.co/"
 class Trainer(object):
     ESTIMATOR = "LogisticRegression"
     EXPERIMENT_NAME = "Invesscience_batch_#463"
+    IMPUTER = 'SimpleImputer'
+    SCALER_AMOUNT = 'RobustScaler'
+    SCALER_PROFESSIONALS = 'MinMaxScaler'
+    SCALER_TIME = 'StandardScaler'
+    SCALER_PARTICIPANTS = 'StandardScaler'
 
     def __init__(self, X, y, **kwargs):
         """
@@ -97,11 +105,48 @@ class Trainer(object):
             #model = Lasso()
 
 
-        estimator_params = self.kwargs.get("estimator_params", {})
+        estimator_params = self.kwargs.get("estimator_params", {}) #Dictionary
         self.mlflow_log_param("estimator", estimator)
         model.set_params(**estimator_params)
         print(colored(model.__class__.__name__, "red"))
         return model
+
+    def get_imputer(self):
+        imputer = self.kwargs.get("imputer", self.IMPUTER)
+        if imputer == "SimpleImputer":
+            imputer = SimpleImputer()
+        if imputer == "KNNImputer":
+            imputer = KNNImputer()
+
+
+        estimator_params = self.kwargs.get("imputer_params", {})
+        self.mlflow_log_param("imputer", imputer)
+        imputer.set_params(**imputer_params)
+        print(colored(imputer.__class__.__name__, "blue"))
+
+        return imputer
+
+    SCALER_AMOUNT = 'RobustScaler'
+    SCALER_PROFESSIONALS = 'MinMaxScaler'
+    SCALER_TIME = 'StandardScaler'
+    SCALER_PARTICIPANTS = 'StandardScaler'
+
+    def get_scaler_raised_amount(self):
+        scaler_amount = self.kwargs.get("scaler_amount", self.SCALER_AMOUNT)
+        if scanler_amount == "RobustScaler":
+            scaler = RobustScaler()
+        if imputer == "KNNImputer":
+            imputer = KNNImputer()
+
+
+        estimator_params = self.kwargs.get("imputer_params", {})
+        self.mlflow_log_param("imputer", imputer)
+        imputer.set_params(**imputer_params)
+        print(colored(imputer.__class__.__name__, "blue"))
+
+        return imputer
+
+
 
     def set_pipeline(self):
         #dist = self.kwargs.get("distance_type", "haversine")
@@ -134,10 +179,47 @@ class Trainer(object):
 
         #features_encoder = ColumnTransformer(feateng_blocks, n_jobs=None, remainder="drop")
 
+
+
+
         #self.pipeline = Pipeline(steps=[
                    # ('features', features_encoder),
                     #('rgs', self.get_estimator())],
                           #       )
+
+        #Column spliting
+        categorical_features = list(companies.select_dtypes('object').columns)
+        numerical_features = columnas[0:-4]
+
+        top_features_num = ['top_5', 'top_20','top_50']
+        boolean_features = ['MBA_bool', 'cs_bool', 'phd_bool' ,'top_5_bool', 'top_20_bool', 'top_50_bool']
+        investment_amount_features = ['raised_amount_usd_a', 'raised_before_a', 'rounds_before_a' ]
+        time_feature = ['timediff_founded_series_a']
+        participant_feature = ['participants_a', 'participants_before_a']
+        professional_features = ['phd', 'MBA', 'cs','graduate', 'undergrad',
+                                'professional', 'degree_count','founder_count',
+                                'n_female_founders','female_ratio', 'mean_comp_founded_ever',
+                                'mean_comp_founded_before']
+
+        #Defining imputers
+
+        notdegrees_imputer = KNNImputer()
+
+        raised_amount_scaler = RobustScaler()
+        profesionals_scaler = MinMaxScaler()
+
+        timediff_scaler = StandardScaler()
+        participant_scaler = StandardScaler()
+
+
+
+
+
+
+
+
+
+
 
         self.pipeline = Pipeline(steps=[
                     ('rgs', self.get_estimator())],
@@ -168,7 +250,7 @@ class Trainer(object):
         if show:
             res = pd.DataFrame(y_test)
             res["pred"] = y_pred
-            print(colored(res.sample(5), "blue"))
+            print(colored(res.sample(5), "blue")) #Aumentar tamaño de muestra de validacion
         f1 = compute_f1(y_pred, y_test)
         return round(f1, 3)
 
@@ -224,13 +306,17 @@ class Trainer(object):
 
 if __name__ == "__main__":
     warnings.simplefilter(action='ignore', category=FutureWarning)
+
     # Get and clean data
     experiment = "Invesscience_batch_#463"
 
 
-    if "YOURNAME" in experiment:
-        print(colored("Please define MlFlow experiment variable with your own name", "red"))
-
+    columnas = ['participants_a','raised_amount_usd_a', 'raised_before_a', 'rounds_before_a', 'timediff_founded_series_a', 'phd', 'MBA', 'cs',
+                                                        'graduate', 'undergrad', 'professional', 'degree_count',
+                                                        'founder_count', 'n_female_founders','female_ratio',
+                                                        'mean_comp_founded_ever', 'mean_comp_founded_before', \
+                                                        'top_5', 'top_20','top_50','MBA_bool', 'cs_bool', 'phd_bool' ,'top_5_bool', 'top_20_bool', \
+                                                        'top_50_bool','state_code', 'country_code', 'category_code','target' ]
 
 
         #Iterando sobre los parametros
@@ -257,18 +343,18 @@ if __name__ == "__main__":
 
 
 
-        params = dict(estimator = estimator_iter,local=False, split=True,  mlflow = True, experiment_name=experiment)
+        params = dict(estimator = estimator_iter,local=False, split=True,  mlflow = True, experiment_name=experiment, imputer= 'SimpleImputer',
+                        imputer_params = {}, ) #agregar
 
 
         print("############   Loading Data   ############")
 
-        df = get_training_data(reference='a')
-        df = df.drop(columns= ['founded_at','normalized_name', 'description', 'exit', 'exit_date', 'date_series_a', 'closed_at'])
+        df = clean_data(reference='a')
+        df = df[columnas]
 
-        df= df.dropna()
 
         y_train = df["target"]
-        X_train = df.drop(columns =['target', 'category_code' , 'country_code', 'state_code', 'id']) #Change when we have categorical var
+        X_train = df.drop(columns =['target']) #Change when we have categorical var
         del df
         print("shape: {}".format(X_train.shape))
         print("size: {} Mb".format(X_train.memory_usage().sum() / 1e6))
