@@ -26,10 +26,9 @@ from sklearn.pipeline import Pipeline, make_pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from termcolor import colored
 from xgboost import XGBRegressor
-from invesscience.utils import compute_f1, simple_time_tracker
 
 
-
+from invesscience.utils import compute_f1, simple_time_tracker, lean_data
 from invesscience.joanna_merge import get_training_data
 
 
@@ -57,7 +56,8 @@ class Trainer(object):
         self.pipeline = None
         self.kwargs = kwargs
         self.local = kwargs.get("local", False)  # if True training is done locally
-        self.mlflow = kwargs.get("mlflow", False)  # if True log info to nlflow
+        self.mlflow = kwargs.get("mlflow", False)
+        self.reference = kwargs.get("reference", 'a')
         self.experiment_name = kwargs.get("experiment_name", self.EXPERIMENT_NAME)  # cf doc above
         self.model_params = None  # for
         self.X_train = X
