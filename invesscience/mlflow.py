@@ -21,7 +21,7 @@ from sklearn.pipeline import Pipeline, make_pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from termcolor import colored
 from xgboost import XGBRegressor
-from invesscience.utils import compute_f1, simple_time_tracker, clean_data
+from invesscience.utils import compute_f1, simple_time_tracker, clean_data, compute_precision
 from invesscience.joanna_merge import get_training_data
 from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
@@ -66,6 +66,7 @@ class Trainer(object):
         self.local = kwargs.get("local", False)  # if True training is done locally
         self.mlflow = kwargs.get("mlflow", False)
         self.reference = kwargs.get("reference", 'a')
+        self.tag = kwargs.get("tag_description", "nada")
         self.experiment_name = kwargs.get("experiment_name", self.EXPERIMENT_NAME)  # cf doc above
         self.model_params = None  # for
         self.X_train = X
@@ -74,7 +75,7 @@ class Trainer(object):
         self.split = self.kwargs.get("split", True)  # cf doc above
         if self.split:
             self.X_train, self.X_val, self.y_train, self.y_val = train_test_split(self.X_train, self.y_train,
-                                                                                  test_size=0.2)
+                                                                                  test_size=0.3)
         self.nrows = self.X_train.shape[0]  # nb of rows to train on
         self.log_kwargs_params()
         self.log_machine_specs()
@@ -201,10 +202,10 @@ class Trainer(object):
         categorical_features = list(self.X_train.select_dtypes('object').columns)
 
         top_features_num = ['top_5', 'top_20','top_50']
-        boolean_features = ['MBA_bool', 'cs_bool', 'phd_bool' ,'top_5_bool', 'top_20_bool', 'top_50_bool']
-        investment_amount_features = ['raised_amount_usd_a', 'raised_before_a', 'rounds_before_a' ]
-        time_feature = ['timediff_founded_series_a']
-        participant_feature = ['participants_a', 'participants_before_a']
+        #boolean_features = ['MBA_bool', 'cs_bool', 'phd_bool' ,'top_5_bool', 'top_20_bool', 'top_50_bool']
+        investment_amount_features = [f'raised_amount_usd_{self.reference}', f'raised_before_{self.reference}', f'rounds_before_{self.reference}' ]
+        time_feature = [f'timediff_founded_series_{self.reference}']
+        participant_feature = [f'participants_{self.reference}', f'participants_before_{self.reference}']
         professional_features = ['phd', 'MBA', 'cs','graduate', 'undergrad',
                                 'professional', 'degree_count','founder_count',
                                 'n_female_founders','female_ratio', 'mean_comp_founded_ever',
@@ -241,8 +242,10 @@ class Trainer(object):
                            ('timediff_scaler', pipe_time, time_feature),
                            ('profesionals_scaler', pipe_professionals, professional_features),
                            ('top_scale', MinMaxScaler(), top_features_num), #just to stablish order of output columns
-                           ('bolean_var',  MinMaxScaler(), boolean_features), #just to stablish order of output columns
+                           #('bolean_var',  MinMaxScaler(), boolean_features), #just to stablish order of output columns
                            ('cat_pipe', pipe_categorical, categorical_features)]
+
+
 
         #Columntransformer keeping order
         preprocessor = ColumnTransformer(feateng_blocks)
@@ -259,16 +262,25 @@ class Trainer(object):
         self.pipeline.fit(self.X_train, self.y_train)
         # mlflow logs
         self.mlflow_log_metric("train_time", int(time.time() - tic))
+        self.set_tag('tag_instance', self.tag)
 
     def evaluate(self):
         f1_train = self.compute_f1(self.X_train, self.y_train)
+        precision_train = self.compute_precision(self.X_train, self.y_train)
+
         self.mlflow_log_metric("f1score_train", f1_train)
+        self.mlflow_log_metric("precision_train", precision_train)
+
         if self.split:
             f1_val = self.compute_f1(self.X_val, self.y_val, show=True)
+            precision_val = self.compute_precision(self.X_val, self.y_val, show=True)
             self.mlflow_log_metric("f1score_val", f1_val)
-            print(colored("f1 train: {} || f1 val: {}".format(f1_train, f1_val), "blue"))
+            self.mlflow_log_metric("precision_val", precision_val)
+            print(colored("f1 train: {} || f1 val: {}".format(f1_train, f1_val), "yellow"))
+            print(colored("precision train: {} || precision val: {}".format(precision_train, precision_val), "yellow"))
         else:
             print(colored("f1 train: {}".format(f1_train), "blue"))
+            print(colored("precision train: {}".format(precision_train), "blue"))
 
     def compute_f1(self, X_test, y_test, show=False):
         if self.pipeline is None:
@@ -277,9 +289,22 @@ class Trainer(object):
         if show:
             res = pd.DataFrame(y_test)
             res["pred"] = y_pred
-            print(colored(res.sample(5), "blue")) #Aumentar tamaño de muestra de validacion
+            print(colored(res.sample(self.y_val.shape[0]), "blue")) #Aumentar tamaño de muestra de validacion
         f1 = compute_f1(y_pred, y_test)
         return round(f1, 3)
+
+
+    def compute_precision(self, X_test, y_test, show=False):
+        if self.pipeline is None:
+            raise ("Cannot evaluate an empty pipeline")
+        y_pred = self.pipeline.predict(X_test)
+        if show:
+            res = pd.DataFrame(y_test)
+            res["pred"] = y_pred
+            print(colored(res.sample(self.y_val.shape[0]), "blue")) #Aumentar tamaño de muestra de validacion
+        precision = compute_precision(y_pred, y_test)
+        return round(precision, 3)
+
 
     def save_model(self):
         """Save the model into a .joblib format"""
@@ -318,6 +343,10 @@ class Trainer(object):
         for k, v in params.items():
             self.mlflow_log_param(k, v)
 
+    def set_tag(self, key, value):
+        if self.mlflow:
+            self.mlflow_client.set_tag(self.mlflow_run.info.run_id, key, value)
+
     def log_kwargs_params(self):
         if self.mlflow:
             for k, v in self.kwargs.items():
@@ -331,6 +360,9 @@ class Trainer(object):
         self.mlflow_log_param("cpus", cpus)
 
 
+
+
+
 if __name__ == "__main__":
     warnings.simplefilter(action='ignore', category=FutureWarning)
 
@@ -338,36 +370,34 @@ if __name__ == "__main__":
     experiment = "Invesscience_batch_#463"
 
 
-    columnas = ['participants_a','participants_before_a','raised_amount_usd_a', 'raised_before_a', 'rounds_before_a', 'timediff_founded_series_a', 'phd', 'MBA', 'cs',
+    #Change the reference HERE !!!
+    reference = 'a'
+
+
+    columnas = [f'participants_{reference}',f'participants_before_{reference}',f'raised_amount_usd_{reference}', f'raised_before_{reference}', f'rounds_before_{reference}',
+                                                        f'timediff_founded_series_{reference}', 'phd', 'MBA', 'cs',
                                                         'graduate', 'undergrad', 'professional', 'degree_count',
                                                         'founder_count', 'n_female_founders','female_ratio',
-                                                        'mean_comp_founded_ever', 'mean_comp_founded_before', \
-                                                        'top_5', 'top_20','top_50','MBA_bool', 'cs_bool', 'phd_bool' ,'top_5_bool', 'top_20_bool', \
-                                                        'top_50_bool','state_code', 'country_code', 'category_code','target' ]
-
-
-        #Iterando sobre los parametros
-
-    #
+                                                        'mean_comp_founded_ever', 'mean_comp_founded_before', 'top_5', 'top_20','top_50',
+                                                        #'MBA_bool', 'cs_bool', 'phd_bool' ,'top_5_bool', 'top_20_bool', 'top_50_bool',
+                                                        'state_code', 'country_code', 'category_code','target' ]
 
 
 
-    for estimator_iter in ['SVC']:
+    for estimator_iter in ['LogisticRegression']:
 
 
-        params = dict(estimator = estimator_iter, estimator_params ={}, local=False, split=True,  mlflow = True, experiment_name=experiment,
-         imputer= 'SimpleImputer', imputer_params = {}, scaler_professionals= 'MinMaxScaler' , scaler_professionals_params = {},
-         scaler_time= 'StandardScaler', scaler_time_params={}, scaler_amount='RobustScaler', scaler_amount_params={} , scaler_participants='StandardScaler',
+        params = dict(estimator = estimator_iter, estimator_params ={'class_weight': 'balanced'}, local=False, split=True,  mlflow = True,
+            experiment_name=experiment,imputer= 'KNNImputer', imputer_params = {}, scaler_professionals= 'MinMaxScaler' , scaler_professionals_params = {},
+         scaler_time= 'StandardScaler', scaler_time_params={}, scaler_amount='MinMaxScaler', scaler_amount_params={} , scaler_participants='RobustScaler',
          scaler_participant_params={} ) #agregar
+
 
 
         print("############   Loading Data   ############")
 
-        df = clean_data('a')
+        df = clean_data(reference)
         df = df[columnas]
-        print(df.columns)
-
-
 
         y_train = df["target"]
         X_train = df.drop(columns =['target']) #Change when we have categorical var
