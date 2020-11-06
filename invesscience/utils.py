@@ -57,7 +57,8 @@ def clean_data(reference):
     #henri df
 
 
-    df = pd.read_csv(os.path.join(path,"raw_data","datanamed_completed.csv"), sep=';', header=1)[['id','state_code']]
+    df = pd.read_csv(os.path.join(path,"raw_data","datanamed_completed.csv"), sep=';', header=1)
+    df = df[df.country_code=='USA'][['id', 'state_code']]
 
     merge_1 = companies.merge(df, how ='left', on = 'id')
     dict2 = merge_1.state_code_x.reset_index(drop=True).to_dict()
@@ -85,8 +86,6 @@ def clean_data(reference):
     for i in dict1:
         if type(merge_2.state_code_y.reset_index(drop=True).to_dict()[i]) == type(""):
             dict2[i] = dict1[i]
-        else:
-            dict2[i] = 'other'
 
     for i in dict3:
         if type(merge_2.country_code_y.reset_index(drop=True).to_dict()[i]) == type(""):
