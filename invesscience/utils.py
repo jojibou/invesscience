@@ -38,7 +38,8 @@ def simple_time_tracker(method):
 
 def clean_data(reference):
 
-    ''' get your data cleaned and category filled, filtering rows with more than 5 Nan, and some outliers'''
+    ''' quit nan observations with more than X nan values
+        quit outliers'''
 
     path = os.path.dirname(os.path.dirname(__file__))
 
@@ -55,8 +56,6 @@ def clean_data(reference):
 
     #Standarizing STATES
     #henri df
-
-
     df = pd.read_csv(os.path.join(path,"raw_data","datanamed_completed.csv"), sep=';', header=1)
     df = df[df.country_code=='USA'][['id', 'state_code']]
 
@@ -95,8 +94,7 @@ def clean_data(reference):
     merge_2['country_code'] = dict4.values()
     merge_2 = merge_2.drop(columns = ['state_code_y', 'state_code_x', 'country_code_y', 'country_code_x'])
 
-
-    # # Completing the categories
+    # Completing the categories
 
     df =pd.read_csv(os.path.join(path,"raw_data","categories_filled.csv"), sep=';')[['id', 'category_code']]
 
@@ -112,6 +110,14 @@ def clean_data(reference):
     merge_3['category_code'] = dict2.values()
     merge_3 = merge_3.drop(columns = ['category_code_x', 'category_code_y'])
 
+
+    if reference == 0:
+        df = pd.read_csv(os.path.join(path,"raw_data","reference0_filled.csv"), sep=';')
+        merge_3['state_code'] = df.state_code
+        merge_3['country_code'] = df.country_code
+        merge_3['category_code'] = df.category_code
+        return merge_3.set_index('id')
+
     return merge_3.set_index('id')
 
-    return merge_3
+

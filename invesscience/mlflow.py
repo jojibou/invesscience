@@ -371,7 +371,7 @@ if __name__ == "__main__":
 
 
     #Change the reference HERE !!!
-    reference = 'a'
+    reference = 0
 
 
     columnas = [f'participants_{reference}',f'participants_before_{reference}',f'raised_amount_usd_{reference}', f'raised_before_{reference}', f'rounds_before_{reference}',
@@ -397,20 +397,24 @@ if __name__ == "__main__":
         print("############   Loading Data   ############")
 
         df = clean_data(reference)
-        df = df[columnas]
+        df2 = clean_data('a')
+        print(df.columns)
+        print('ESTA ES LA COLUMNA a')
+        print(df2.columns)
+        #df = df[columnas]
 
-        y_train = df["target"]
-        X_train = df.drop(columns =['target']) #Change when we have categorical var
-        del df
-        print("shape: {}".format(X_train.shape))
-        print("size: {} Mb".format(X_train.memory_usage().sum() / 1e6))
-        # Train and save model, locally and
-        t = Trainer(X=X_train, y=y_train, **params)
-        del X_train, y_train
+        # y_train = df["target"]
+        # X_train = df.drop(columns =['target']) #Change when we have categorical var
+        # del df
+        # print("shape: {}".format(X_train.shape))
+        # print("size: {} Mb".format(X_train.memory_usage().sum() / 1e6))
+        # # Train and save model, locally and
+        # t = Trainer(X=X_train, y=y_train, **params)
+        # del X_train, y_train
 
-        print(colored("############  Training model   ############", "red"))
-        t.train()
-        print(colored("############  Evaluating model ############", "blue"))
-        t.evaluate()
-        print(colored("############   Saving model    ############", "green"))
-        t.save_model()
+        # print(colored("############  Training model   ############", "red"))
+        # t.train()
+        # print(colored("############  Evaluating model ############", "blue"))
+        # t.evaluate()
+        # print(colored("############   Saving model    ############", "green"))
+        # t.save_model()
