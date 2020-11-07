@@ -199,17 +199,32 @@ class Trainer(object):
     def set_pipeline(self):
 
         #Column spliting
-        categorical_features = list(self.X_train.select_dtypes('object').columns)
+        if self.reference=='a':
+            categorical_features = list(self.X_train.select_dtypes('object').columns)
 
-        top_features_num = ['top_5', 'top_20','top_50']
-        #boolean_features = ['MBA_bool', 'cs_bool', 'phd_bool' ,'top_5_bool', 'top_20_bool', 'top_50_bool']
-        investment_amount_features = [f'raised_amount_usd_{self.reference}', f'raised_before_{self.reference}', f'rounds_before_{self.reference}' ]
-        time_feature = [f'timediff_founded_series_{self.reference}']
-        participant_feature = [f'participants_{self.reference}', f'participants_before_{self.reference}']
-        professional_features = ['phd', 'MBA', 'cs','graduate', 'undergrad',
-                                'professional', 'degree_count','founder_count',
-                                'n_female_founders','female_ratio', 'mean_comp_founded_ever',
-                                'mean_comp_founded_before']
+            top_features_num = ['top_5', 'top_20','top_50']
+            #boolean_features = ['MBA_bool', 'cs_bool', 'phd_bool' ,'top_5_bool', 'top_20_bool', 'top_50_bool']
+            investment_amount_features = [f'raised_amount_usd_{self.reference}', f'raised_before_{self.reference}', f'rounds_before_{self.reference}' ]
+            time_feature = [f'timediff_founded_series_{self.reference}']
+            participant_feature = [f'participants_{self.reference}', f'participants_before_{self.reference}']
+            professional_features = ['phd', 'MBA', 'cs','graduate', 'undergrad',
+                                    'professional', 'degree_count','founder_count',
+                                    'n_female_founders','female_ratio', 'mean_comp_founded_ever',
+                                    'mean_comp_founded_before']
+
+        elif self.reference==0:
+            categorical_features = list(self.X_train.select_dtypes('object').columns)
+
+            top_features_num = ['top_5', 'top_20','top_50']
+            #boolean_features = ['MBA_bool', 'cs_bool', 'phd_bool' ,'top_5_bool', 'top_20_bool', 'top_50_bool']
+            investment_amount_features = [f'raised_amount_usd_{self.reference}']
+            time_feature = [f'timediff_founded_series_{self.reference}']
+            participant_feature = [f'participants_{self.reference}']
+            professional_features = ['phd', 'MBA', 'cs','graduate', 'undergrad',
+                                    'professional', 'degree_count','founder_count',
+                                    'n_female_founders','female_ratio', 'mean_comp_founded_ever',
+                                    'mean_comp_founded_before']
+
 
         #Defining imputers
 
@@ -371,9 +386,9 @@ if __name__ == "__main__":
 
 
     #Change the reference HERE !!!
-    reference = 0
 
 
+    reference = 'a'
     columnas = [f'participants_{reference}',f'participants_before_{reference}',f'raised_amount_usd_{reference}', f'raised_before_{reference}', f'rounds_before_{reference}',
                                                         f'timediff_founded_series_{reference}', 'phd', 'MBA', 'cs',
                                                         'graduate', 'undergrad', 'professional', 'degree_count',
@@ -384,10 +399,26 @@ if __name__ == "__main__":
 
 
 
+    # grid_search = GridSearchCV(
+    #     final_pipe,
+    #     param_grid={
+    #         # Access any component of the pipeline, as far back as you want
+    #         'preprocessing__agetransformer__imputer__strategy': ['mean', 'median'],
+    #         'linear_regression__normalize': [True, False]},
+    #     cv=5,
+    #     scoring="r2")
+
+    # grid_search.fit(X_train, y_train)
+
+
+
+
     for estimator_iter in ['LogisticRegression']:
 
 
-        params = dict(estimator = estimator_iter, estimator_params ={'class_weight': 'balanced'}, local=False, split=True,  mlflow = True,
+
+
+        params = dict(tag='trying', reference =reference ,estimator = estimator_iter, estimator_params ={'class_weight': 'balanced'}, local=False, split=True,  mlflow = True,
             experiment_name=experiment,imputer= 'KNNImputer', imputer_params = {}, scaler_professionals= 'MinMaxScaler' , scaler_professionals_params = {},
          scaler_time= 'StandardScaler', scaler_time_params={}, scaler_amount='MinMaxScaler', scaler_amount_params={} , scaler_participants='RobustScaler',
          scaler_participant_params={} ) #agregar
@@ -397,20 +428,18 @@ if __name__ == "__main__":
         print("############   Loading Data   ############")
 
         df = clean_data(reference)
-        df2 = clean_data('a')
-        print(df.columns)
-        print('ESTA ES LA COLUMNA a')
-        print(df2.columns)
-        #df = df[columnas]
+        df = df[columnas]
 
-        # y_train = df["target"]
-        # X_train = df.drop(columns =['target']) #Change when we have categorical var
-        # del df
-        # print("shape: {}".format(X_train.shape))
-        # print("size: {} Mb".format(X_train.memory_usage().sum() / 1e6))
-        # # Train and save model, locally and
-        # t = Trainer(X=X_train, y=y_train, **params)
-        # del X_train, y_train
+        y_train = df["target"]
+        X_train = df.drop(columns =['target']) #Change when we have categorical var
+        del df
+        print("shape: {}".format(X_train.shape))
+        print("size: {} Mb".format(X_train.memory_usage().sum() / 1e6))
+        # Train and save model, locally and
+        t = Trainer(X=X_train, y=y_train, **params)
+        del X_train, y_train
+
+        print(type(t.set_pipeline()))
 
         # print(colored("############  Training model   ############", "red"))
         # t.train()
