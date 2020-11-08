@@ -33,8 +33,11 @@ from sklearn.preprocessing import RobustScaler
 from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
-
-
+from sklearn.model_selection import RandomizedSearchCV
+from sklearn.model_selection import GridSearchCV
+from scipy.stats import uniform
+from xgboost import XGBClassifier
+from sklearn.ensemble import AdaBoostClassifier
 
 MLFLOW_URI = "https://mlflow.lewagon.co/"
 
@@ -69,6 +72,7 @@ class Trainer(object):
         self.tag = kwargs.get("tag_description", "nada")
         self.experiment_name = kwargs.get("experiment_name", self.EXPERIMENT_NAME)  # cf doc above
         self.model_params = None  # for
+        self.grid_search_choice = kwargs.get("grid_search_choice", False)
         self.X_train = X
         self.y_train = y
         del X, y
@@ -83,24 +87,26 @@ class Trainer(object):
     def get_estimator(self):
         estimator = self.kwargs.get("estimator", self.ESTIMATOR)
         if estimator == "LogisticRegression":
-            model = LogisticRegression()
+            model = LogisticRegression(class_weight= 'balanced')
         elif estimator == "SVC":
-            model = SVC()
+            model = SVC(class_weight='balanced' )
         elif estimator == "KNeighborsClassifier":
-            model = KNeighborsClassifier()
+            model = KNeighborsClassifier(weights = 'distance')
         elif estimator == "DecisionTree":
-            model = DecisionTreeClassifier()
+            model = DecisionTreeClassifier(class_weight='balanced')
 
         elif estimator == "RandomForestClassifier":
-            model = RandomForestClassifier()
+            model = RandomForestClassifier(class_weight='balanced')
             self.model_params = {  # 'n_estimators': [int(x) for x in np.linspace(start = 50, stop = 200, num = 10)],
                 'max_features': ['auto']}
             # 'max_depth' : [int(x) for x in np.linspace(10, 110, num = 11)]}
 
+        elif estimator == "xgboost":
+            model = XGBClassifier(scale_pos_weight = 2.23)
 
-        #elif estimator == "xgboost":
-            #model = XGBRegressor(objective='reg:squarederror', n_jobs=-1, max_depth=10, learning_rate=0.05,
-                                 #gamma=3)
+        elif estimator == "adaboost":
+            model = AdaBoostClassifier()
+
 
         #else:
             #model = Lasso()
@@ -202,28 +208,70 @@ class Trainer(object):
         if self.reference=='a':
             categorical_features = list(self.X_train.select_dtypes('object').columns)
 
-            top_features_num = ['top_5', 'top_20','top_50']
-            #boolean_features = ['MBA_bool', 'cs_bool', 'phd_bool' ,'top_5_bool', 'top_20_bool', 'top_50_bool']
-            investment_amount_features = [f'raised_amount_usd_{self.reference}', f'raised_before_{self.reference}', f'rounds_before_{self.reference}' ]
-            time_feature = [f'timediff_founded_series_{self.reference}']
-            participant_feature = [f'participants_{self.reference}', f'participants_before_{self.reference}']
-            professional_features = ['phd', 'MBA', 'cs','graduate', 'undergrad',
-                                    'professional', 'degree_count','founder_count',
-                                    'n_female_founders','female_ratio', 'mean_comp_founded_ever',
-                                    'mean_comp_founded_before']
+            # top_features_num = []#'top_5', 'top_20','top_50']
+            # boolean_features = ['MBA_bool', 'cs_bool', 'phd_bool' ,'top_5_bool', 'top_20_bool', 'top_50_bool']
+            # investment_amount_features = [f'raised_amount_usd_{self.reference}', f'raised_before_{self.reference}', f'rounds_before_{self.reference}' ]
+            # time_feature = []#f'timediff_founded_series_{self.reference}']
+            # participant_feature = [f'participants_{self.reference}', f'participants_before_{self.reference}']
+            # professional_features = [#'phd', 'MBA', 'cs',
+            #                         'graduate', 'undergrad',
+            #                         'professional', 'degree_count','founder_count',
+            #                         'n_female_founders','female_ratio', 'mean_comp_founded_ever',
+            #                         'mean_comp_founded_before']
+
+
+            professional_features = ['MBA' , 'founder_count','female_ratio' , 'mean_comp_founded_ever','mean_comp_founded_before',
+                                     #'phd' , 'cs','graduate', 'undergrad', 'professional', 'degree_count','n_female_founders'
+                                                               ]
+            top_features_num = ['top_5'
+                                #,'top_20','top_50'
+                               ]
+
+
+            boolean_features = [#'MBA_bool',
+                                'cs_bool'
+                                #,'phd_bool' ,'top_5_bool', 'top_20_bool', 'top_50_bool'
+                               ]
+
+            investment_amount_features = [f'raised_amount_usd_{reference}', f'raised_before_{reference}', f'rounds_before_{reference}' ] #importants
+
+            time_feature = [f'timediff_founded_series_{reference}']#importants
+
+            participant_feature = ['participants_a', 'participants_before_a'] #importants
+
 
         elif self.reference==0:
             categorical_features = list(self.X_train.select_dtypes('object').columns)
 
-            top_features_num = ['top_5', 'top_20','top_50']
-            #boolean_features = ['MBA_bool', 'cs_bool', 'phd_bool' ,'top_5_bool', 'top_20_bool', 'top_50_bool']
-            investment_amount_features = [f'raised_amount_usd_{self.reference}']
-            time_feature = [f'timediff_founded_series_{self.reference}']
-            participant_feature = [f'participants_{self.reference}']
-            professional_features = ['phd', 'MBA', 'cs','graduate', 'undergrad',
-                                    'professional', 'degree_count','founder_count',
-                                    'n_female_founders','female_ratio', 'mean_comp_founded_ever',
-                                    'mean_comp_founded_before']
+            # top_features_num = []#'top_5', 'top_20','top_50']
+            # boolean_features = ['MBA_bool', 'cs_bool', 'phd_bool' ,'top_5_bool', 'top_20_bool', 'top_50_bool']
+            # investment_amount_features = [f'raised_amount_usd_{self.reference}']
+            # time_feature = []#f'timediff_founded_series_{self.reference}']
+            # participant_feature = [f'participants_{self.reference}']
+            # professional_features = [#'phd', 'MBA', 'cs',
+            #                         'graduate', 'undergrad',
+            #                         'professional', 'degree_count','founder_count',
+            #                         'n_female_founders','female_ratio', 'mean_comp_founded_ever',
+            #                         'mean_comp_founded_before']
+
+            professional_features = ['MBA' , 'founder_count','female_ratio' , 'mean_comp_founded_ever','mean_comp_founded_before',
+                                     #'phd' , 'cs','graduate', 'undergrad', 'professional', 'degree_count','n_female_founders'
+                                                               ]
+            top_features_num = ['top_5'
+                                #,'top_20','top_50'
+                               ]
+
+
+            boolean_features = [#'MBA_bool',
+                                'cs_bool'
+                                #,'phd_bool' ,'top_5_bool', 'top_20_bool', 'top_50_bool'
+                               ]
+
+            investment_amount_features = [f'raised_amount_usd_{reference}'] #importants
+
+            time_feature = [f'timediff_founded_series_{reference}']#importants
+
+            participant_feature = [f'participants_{reference}'] #importants
 
 
         #Defining imputers
@@ -257,7 +305,7 @@ class Trainer(object):
                            ('timediff_scaler', pipe_time, time_feature),
                            ('profesionals_scaler', pipe_professionals, professional_features),
                            ('top_scale', MinMaxScaler(), top_features_num), #just to stablish order of output columns
-                           #('bolean_var',  MinMaxScaler(), boolean_features), #just to stablish order of output columns
+                           ('bolean_var',  MinMaxScaler(), boolean_features), #just to stablish order of output columns
                            ('cat_pipe', pipe_categorical, categorical_features)]
 
 
@@ -267,7 +315,32 @@ class Trainer(object):
 
         #final_pipeline
         self.pipeline = Pipeline(steps = [('preprocessing', preprocessor),
-                            ('rgs', self.get_estimator())] )
+                            ('model_use', self.get_estimator())] )
+
+
+
+        # Random search
+        if self.grid_search_choice:
+            grid_search = GridSearchCV(
+                self.pipeline,
+                param_grid ={
+
+                    'model_use__penalty' : ['l2'],
+                    'model_use__C' : [0.1,0.3,0.5,0.7,1,3,4,6,7,10],
+                    'model_use__solver': ['liblinear', 'saga'] },  #param depending of the model to use
+                cv=5,
+                scoring="f1",
+                n_jobs = -1 )
+
+
+            grid_search.fit(self.X_train, self.y_train)
+
+            self.pipeline = grid_search.best_estimator_
+            self.grid_params = grid_search.get_params
+
+            self.set_tag('model_used', self.pipeline)
+
+
 
 
     @simple_time_tracker
@@ -389,61 +462,90 @@ if __name__ == "__main__":
 
 
     reference = 'a'
-    columnas = [f'participants_{reference}',f'participants_before_{reference}',f'raised_amount_usd_{reference}', f'raised_before_{reference}', f'rounds_before_{reference}',
-                                                        f'timediff_founded_series_{reference}', 'phd', 'MBA', 'cs',
-                                                        'graduate', 'undergrad', 'professional', 'degree_count',
-                                                        'founder_count', 'n_female_founders','female_ratio',
-                                                        'mean_comp_founded_ever', 'mean_comp_founded_before', 'top_5', 'top_20','top_50',
-                                                        #'MBA_bool', 'cs_bool', 'phd_bool' ,'top_5_bool', 'top_20_bool', 'top_50_bool',
-                                                        'state_code', 'country_code', 'category_code','target' ]
 
+    if reference =='a':
+        columnas = [f'participants_{reference}',f'participants_before_{reference}',f'raised_amount_usd_{reference}', f'raised_before_{reference}', f'rounds_before_{reference}',
+                                                            #f'timediff_founded_series_{reference}',
+                                                            #'phd', 'MBA', 'cs',
+                                                            'graduate', 'undergrad', 'professional', 'degree_count',
+                                                            'founder_count', 'n_female_founders','female_ratio',
+                                                            'mean_comp_founded_ever', 'mean_comp_founded_before',
+                                                            #'top_5', 'top_20','top_50',
+                                                            'MBA_bool', 'cs_bool', 'phd_bool' ,'top_5_bool', 'top_20_bool', 'top_50_bool',
+                                                            'state_code', 'country_code', 'category_code','target' ]
 
-
-    # grid_search = GridSearchCV(
-    #     final_pipe,
-    #     param_grid={
-    #         # Access any component of the pipeline, as far back as you want
-    #         'preprocessing__agetransformer__imputer__strategy': ['mean', 'median'],
-    #         'linear_regression__normalize': [True, False]},
-    #     cv=5,
-    #     scoring="r2")
-
-    # grid_search.fit(X_train, y_train)
-
-
-
-
-    for estimator_iter in ['LogisticRegression']:
+        #with feature selection done
+        columnas = ['participants_a', 'participants_before_a', 'raised_amount_usd_a',
+                     'raised_before_a', 'rounds_before_a', 'timediff_founded_series_a', 'MBA', 'founder_count',
+                     'female_ratio', 'mean_comp_founded_ever', 'mean_comp_founded_before', 'top_5', 'MBA_bool',
+                     'cs_bool', 'top_5_bool', 'state_code', 'country_code', 'category_code', 'target']
 
 
 
 
-        params = dict(tag='trying', reference =reference ,estimator = estimator_iter, estimator_params ={'class_weight': 'balanced'}, local=False, split=True,  mlflow = True,
-            experiment_name=experiment,imputer= 'KNNImputer', imputer_params = {}, scaler_professionals= 'MinMaxScaler' , scaler_professionals_params = {},
-         scaler_time= 'StandardScaler', scaler_time_params={}, scaler_amount='MinMaxScaler', scaler_amount_params={} , scaler_participants='RobustScaler',
-         scaler_participant_params={} ) #agregar
+
+
+    elif reference==0:
+        columnas = [f'participants_{reference}',f'raised_amount_usd_{reference}',
+                                                            #f'timediff_founded_series_{reference}',
+                                                            #'phd', 'MBA', 'cs',
+                                                            'graduate', 'undergrad', 'professional', 'degree_count',
+                                                            'founder_count', 'n_female_founders','female_ratio',
+                                                            'mean_comp_founded_ever', 'mean_comp_founded_before',
+                                                            #'top_5', 'top_20','top_50',
+                                                            'MBA_bool', 'cs_bool', 'phd_bool' ,'top_5_bool', 'top_20_bool', 'top_50_bool',
+                                                            'state_code', 'country_code', 'category_code','target' ]
+
+
+        #with feature selection done
+
+
+        columnas = [f'participants_{reference}', f'raised_amount_usd_{reference}',f'timediff_founded_series_{reference}', 'MBA', 'founder_count',
+                             'female_ratio', 'mean_comp_founded_ever', 'mean_comp_founded_before', 'top_5', 'MBA_bool',
+                             'cs_bool', 'top_5_bool', 'state_code', 'country_code', 'category_code', 'target']
+
+
+    for i in range(3):
+
+        for estimator_iter in [#'LogisticRegression' ,'xgboost',
+                                 'adaboost']:
 
 
 
-        print("############   Loading Data   ############")
+            scalers = ['MinMaxScaler', 'StandardScaler', 'RobustScaler']
 
-        df = clean_data(reference)
-        df = df[columnas]
 
-        y_train = df["target"]
-        X_train = df.drop(columns =['target']) #Change when we have categorical var
-        del df
-        print("shape: {}".format(X_train.shape))
-        print("size: {} Mb".format(X_train.memory_usage().sum() / 1e6))
-        # Train and save model, locally and
-        t = Trainer(X=X_train, y=y_train, **params)
-        del X_train, y_train
+            for time_scaler in scalers:
+                for amount_scaler in scalers:
+                    for participants_scaler in scalers:
 
-        print(type(t.set_pipeline()))
 
-        # print(colored("############  Training model   ############", "red"))
-        # t.train()
-        # print(colored("############  Evaluating model ############", "blue"))
-        # t.evaluate()
-        # print(colored("############   Saving model    ############", "green"))
-        # t.save_model()
+                        params = dict(tag_description='[ADA][choosing scalers][a][important features][BALANCED]', reference =reference ,estimator = estimator_iter, estimator_params ={}, local=False, split=True,  mlflow = True,
+                            experiment_name=experiment,imputer= 'SimpleImputer', imputer_params = {}, scaler_professionals= 'MinMaxScaler' , scaler_professionals_params = {},
+                         scaler_time= time_scaler, scaler_time_params={}, scaler_amount=amount_scaler, scaler_amount_params={} , scaler_participants=participants_scaler,
+                         scaler_participant_params={} , grid_search_choice= False) #agregar
+
+
+
+                        print("############   Loading Data   ############")
+
+                        df = clean_data(reference)
+                        df = df[columnas]
+                        y_train = df["target"]
+                        X_train = df.drop(columns =['target']) #Change when we have categorical var
+                        del df
+                        print("shape: {}".format(X_train.shape))
+                        print("size: {} Mb".format(X_train.memory_usage().sum() / 1e6))
+                        # Train and save model, locally and
+                        t = Trainer(X=X_train, y=y_train, **params)
+                        del X_train, y_train
+
+
+                        print(colored("############  Training model   ############", "red"))
+                        t.train()
+                        print(colored("############  Evaluating model ############", "blue"))
+                        t.evaluate()
+                        print(colored("############   Saving model    ############", "green"))
+                        t.save_model()
+
+
