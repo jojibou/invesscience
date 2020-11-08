@@ -31,13 +31,14 @@ from sklearn.preprocessing import OneHotEncoder
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.preprocessing import RobustScaler
 from sklearn.preprocessing import StandardScaler
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier, VotingClassifier, AdaBoostClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import RandomizedSearchCV
 from sklearn.model_selection import GridSearchCV
 from scipy.stats import uniform
 from xgboost import XGBClassifier
-from sklearn.ensemble import AdaBoostClassifier
+
+
 
 MLFLOW_URI = "https://mlflow.lewagon.co/"
 
@@ -93,10 +94,10 @@ class Trainer(object):
         elif estimator == "KNeighborsClassifier":
             model = KNeighborsClassifier(weights = 'distance')
         elif estimator == "DecisionTree":
-            model = DecisionTreeClassifier(class_weight=None)
+            model = DecisionTreeClassifier()
 
         elif estimator == "RandomForestClassifier":
-            model = RandomForestClassifier(class_weight='balanced')
+            model = RandomForestClassifier(class_weight=None)
             self.model_params = {  # 'n_estimators': [int(x) for x in np.linspace(start = 50, stop = 200, num = 10)],
                 'max_features': ['auto']}
             # 'max_depth' : [int(x) for x in np.linspace(10, 110, num = 11)]}
@@ -106,6 +107,9 @@ class Trainer(object):
 
         elif estimator == "adaboost":
             model = AdaBoostClassifier()
+
+        elif estimator =='voting':
+            model = VotingClassifier()
 
 
         #else:
@@ -327,8 +331,11 @@ class Trainer(object):
 
                     'model_use__criterion' : ['gini', 'entropy'],
                     'model_use__splitter' : ['best', 'random'],
-                    'model_use__max_depth': uniform(0,200),
+                    'model_use__max_depth': uniform(0,10),
                     'model_use__min_samples_split': uniform(0,1),
+                    'model_use__min_weight_fraction_leaf': uniform(0,0.5),
+                    'model_use__class_weight' : [None, 'balanced'],
+                    'model_use__ccp_alpha':  uniform(0,1),
                     'model_use__max_features': ['auto', 'sqrt', 'log2'],
                     },  #param depending of the model to use
                 cv=30,
@@ -517,7 +524,7 @@ if __name__ == "__main__":
 
 #ADABOOST : DecisionTree()
 
-        params = dict(tag_description='[DesTree][Hyperparams choosing][a][important features][BALANCED]', reference =reference ,estimator = estimator_iter, estimator_params ={}, local=False, split=True,  mlflow = True,
+        params = dict(tag_description='[DesTree][randomsearrch][Hyperparams choosing][a][important features][BALANCED]', reference =reference ,estimator = estimator_iter, estimator_params ={}, local=False, split=True,  mlflow = True,
             experiment_name=experiment,imputer= 'SimpleImputer', imputer_params = {}, scaler_professionals= 'MinMaxScaler' , scaler_professionals_params = {},
          scaler_time= 'RobustScaler', scaler_time_params={}, scaler_amount='RobustScaler', scaler_amount_params={} , scaler_participants='RobustScaler',
          scaler_participant_params={} , grid_search_choice= True) #agregar
