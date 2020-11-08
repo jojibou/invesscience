@@ -93,7 +93,7 @@ class Trainer(object):
         elif estimator == "KNeighborsClassifier":
             model = KNeighborsClassifier(weights = 'distance')
         elif estimator == "DecisionTree":
-            model = DecisionTreeClassifier(class_weight='balanced')
+            model = DecisionTreeClassifier(class_weight=None)
 
         elif estimator == "RandomForestClassifier":
             model = RandomForestClassifier(class_weight='balanced')
@@ -321,15 +321,19 @@ class Trainer(object):
 
         # Random search
         if self.grid_search_choice:
-            grid_search = GridSearchCV(
+            grid_search = RandomizedSearchCV(
                 self.pipeline,
-                param_grid ={
+                param_distributions ={
 
-                    'model_use__penalty' : ['l2'],
-                    'model_use__C' : [0.1,0.3,0.5,0.7,1,3,4,6,7,10],
-                    'model_use__solver': ['liblinear', 'saga'] },  #param depending of the model to use
-                cv=5,
+                    'model_use__criterion' : ['gini', 'entropy'],
+                    'model_use__splitter' : ['best', 'random'],
+                    'model_use__max_depth': uniform(0,200),
+                    'model_use__min_samples_split': uniform(0,1),
+                    'model_use__max_features': ['auto', 'sqrt', 'log2'],
+                    },  #param depending of the model to use
+                cv=30,
                 scoring="f1",
+                n_iter = 100,
                 n_jobs = -1 )
 
 
@@ -461,9 +465,10 @@ if __name__ == "__main__":
     #Change the reference HERE !!!
 
 
-    reference = 'a'
+    reference = 0
 
     if reference =='a':
+        #without feature selection
         columnas = [f'participants_{reference}',f'participants_before_{reference}',f'raised_amount_usd_{reference}', f'raised_before_{reference}', f'rounds_before_{reference}',
                                                             #f'timediff_founded_series_{reference}',
                                                             #'phd', 'MBA', 'cs',
@@ -486,6 +491,7 @@ if __name__ == "__main__":
 
 
     elif reference==0:
+        #without feature selection
         columnas = [f'participants_{reference}',f'raised_amount_usd_{reference}',
                                                             #f'timediff_founded_series_{reference}',
                                                             #'phd', 'MBA', 'cs',
@@ -498,54 +504,59 @@ if __name__ == "__main__":
 
 
         #with feature selection done
-
-
         columnas = [f'participants_{reference}', f'raised_amount_usd_{reference}',f'timediff_founded_series_{reference}', 'MBA', 'founder_count',
                              'female_ratio', 'mean_comp_founded_ever', 'mean_comp_founded_before', 'top_5', 'MBA_bool',
                              'cs_bool', 'top_5_bool', 'state_code', 'country_code', 'category_code', 'target']
 
 
-    for i in range(3):
-
-        for estimator_iter in [#'LogisticRegression' ,'xgboost',
-                                 'adaboost']:
 
 
+    for estimator_iter in [#'LogisticRegression' ,'xgboost',
+                             #'adaboost'
+                             'DecisionTree']:
 
-            scalers = ['MinMaxScaler', 'StandardScaler', 'RobustScaler']
+#ADABOOST : DecisionTree()
 
-
-            for time_scaler in scalers:
-                for amount_scaler in scalers:
-                    for participants_scaler in scalers:
-
-
-                        params = dict(tag_description='[ADA][choosing scalers][a][important features][BALANCED]', reference =reference ,estimator = estimator_iter, estimator_params ={}, local=False, split=True,  mlflow = True,
-                            experiment_name=experiment,imputer= 'SimpleImputer', imputer_params = {}, scaler_professionals= 'MinMaxScaler' , scaler_professionals_params = {},
-                         scaler_time= time_scaler, scaler_time_params={}, scaler_amount=amount_scaler, scaler_amount_params={} , scaler_participants=participants_scaler,
-                         scaler_participant_params={} , grid_search_choice= False) #agregar
+        params = dict(tag_description='[DesTree][Hyperparams choosing][a][important features][BALANCED]', reference =reference ,estimator = estimator_iter, estimator_params ={}, local=False, split=True,  mlflow = True,
+            experiment_name=experiment,imputer= 'SimpleImputer', imputer_params = {}, scaler_professionals= 'MinMaxScaler' , scaler_professionals_params = {},
+         scaler_time= 'RobustScaler', scaler_time_params={}, scaler_amount='RobustScaler', scaler_amount_params={} , scaler_participants='RobustScaler',
+         scaler_participant_params={} , grid_search_choice= True) #agregar
 
 
 
-                        print("############   Loading Data   ############")
+        print("############   Loading Data   ############")
 
-                        df = clean_data(reference)
-                        df = df[columnas]
-                        y_train = df["target"]
-                        X_train = df.drop(columns =['target']) #Change when we have categorical var
-                        del df
-                        print("shape: {}".format(X_train.shape))
-                        print("size: {} Mb".format(X_train.memory_usage().sum() / 1e6))
-                        # Train and save model, locally and
-                        t = Trainer(X=X_train, y=y_train, **params)
-                        del X_train, y_train
-
-
-                        print(colored("############  Training model   ############", "red"))
-                        t.train()
-                        print(colored("############  Evaluating model ############", "blue"))
-                        t.evaluate()
-                        print(colored("############   Saving model    ############", "green"))
-                        t.save_model()
+        df = clean_data(reference)
+        df = df[columnas]
+        y_train = df["target"]
+        X_train = df.drop(columns =['target']) #Change when we have categorical var
+        del df
+        print("shape: {}".format(X_train.shape))
+        print("size: {} Mb".format(X_train.memory_usage().sum() / 1e6))
+        # Train and save model, locally and
+        t = Trainer(X=X_train, y=y_train, **params)
+        del X_train, y_train
 
 
+        print(colored("############  Training model   ############", "red"))
+        t.train()
+        print(colored("############  Evaluating model ############", "blue"))
+        t.evaluate()
+        print(colored("############   Saving model    ############", "green"))
+        t.save_model()
+
+
+ ################------------Params founded ------#####################################################################
+
+            #High precision more variability
+
+            # scaler_amount ='RobustScaler'
+            # scaler_participants ='RobustScaler'
+            # scaler_professionals ='MinMaxScaler'
+            # scaler_time ='RobustScaler'
+
+            #Low variability less high values
+            # scaler_amount = 'RobustScaler'
+            # scaler_participants ='MinMaxScaler'
+            # scaler_professionals ='MinMaxScaler'
+            # scaler_time ='StandardScaler'
