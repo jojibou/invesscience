@@ -13,6 +13,8 @@ from invesscience.joanna_14 import comps_worked_before
 
 def get_training_data(reference="a", cut='2009'):
 
+
+
     path = os.path.dirname(os.path.dirname(__file__))
     acq = pd.read_csv(os.path.join(path,"raw_data","acquisitions.csv"))
     ipos = pd.read_csv(os.path.join(path,"raw_data","ipos.csv"))
@@ -76,6 +78,8 @@ def get_training_data(reference="a", cut='2009'):
     companies["target"] = companies.exit.map(exits)
 
     return companies
+
+
 
 if __name__ == "__main__":
     companies = get_training_data(reference="a")
