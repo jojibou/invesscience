@@ -10,7 +10,7 @@ from invesscience.felipe_10 import n_female_founders
 from invesscience.joanna_18 import merge_company_level_uni
 from invesscience.joanna_14 import comps_worked_before
 
-def get_training_data(reference="a"):
+def get_training_data(reference="a", cut="2009"):
 
     path = os.path.dirname(os.path.dirname(__file__))
     acq = pd.read_csv(os.path.join(path,"raw_data","acquisitions.csv"))
@@ -43,7 +43,7 @@ def get_training_data(reference="a"):
       f"date_series_{reference}", f"participants_{reference}", f"raised_amount_usd_{reference}"]]
 
     #filter series a before certain date
-    companies = companies[companies[f"date_series_{reference}"]<'2009']
+    companies = companies[companies[f"date_series_{reference}"]<cut]
     #print(companies.head())
     #print(companies.shape)
 
@@ -86,6 +86,8 @@ def get_training_data(reference="a"):
     companies["target"] = companies.exit.map(exits)
 
     return companies
+
+
 
 if __name__ == "__main__":
     companies = get_training_data(reference="a")
