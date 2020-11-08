@@ -31,12 +31,14 @@ from sklearn.preprocessing import OneHotEncoder
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.preprocessing import RobustScaler
 from sklearn.preprocessing import StandardScaler
-from sklearn.ensemble import RandomForestClassifier, VotingClassifier, AdaBoostClassifier
+from sklearn.ensemble import RandomForestClassifier, VotingClassifier, AdaBoostClassifier , GradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import RandomizedSearchCV
 from sklearn.model_selection import GridSearchCV
-from scipy.stats import uniform
+from scipy.stats import uniform, randint
 from xgboost import XGBClassifier
+from sklearn.linear_model import SGDClassifier
+
 
 
 warnings.filterwarnings('ignore')
@@ -90,7 +92,7 @@ class Trainer(object):
     def get_estimator(self):
         estimator = self.kwargs.get("estimator", self.ESTIMATOR)
         if estimator == "LogisticRegression":
-            model = LogisticRegression(class_weight= 'balanced')
+            model = LogisticRegression()
         elif estimator == "SVC":
             model = SVC(class_weight='balanced' )
         elif estimator == "KNeighborsClassifier":
@@ -112,6 +114,9 @@ class Trainer(object):
 
         elif estimator =='voting':
             model = VotingClassifier()
+        elif estimator =='SGDC':
+            model = SGDClassifier()
+
 
 
         #else:
@@ -327,20 +332,16 @@ class Trainer(object):
 
         # Random search
         if self.grid_search_choice:
-            grid_search = RandomizedSearchCV(
+            grid_search = GridSearchCV(
                 self.pipeline,
-                param_distributions ={
+                param_grid ={
 
-                    'model_use__criterion' : ['gini', 'entropy'],
-                    'model_use__splitter' : ['best', 'random'],
-                    'model_use__max_depth': uniform(0,10),
-                    'model_use__min_samples_split': uniform(0,1),
-                    'model_use__min_weight_fraction_leaf': uniform(0,0.5),
-                    'model_use__class_weight' : [None, 'balanced'],
-                    'model_use__max_features': ['auto', 'sqrt', 'log2'],
+                    'model_use__loss' : ['hinge', 'modified_huber', 'squared_hinge'],
+
+
                     },  #param depending of the model to use
                 cv=30,
-                scoring='precision_train',
+                scoring='f1',
                 n_iter = 100,
                 n_jobs = -1 )
 
@@ -518,16 +519,24 @@ if __name__ == "__main__":
 
 
 
-    for i in range(10):
-        for estimator_iter in [#'LogisticRegression' ,'xgboost',
+    for i in range(5):
+        for estimator_iter in [
+                                'SGDC'
+                                #'GradientBoostingClassifier',
+                                #'LogisticRegression'
+                                #,'xgboost',
                                  #'adaboost'
-                                 'DecisionTree']:
+                                 #'DecisionTree'
+                                 ]:
 
     #ADABOOST : DecisionTree()
 
-            params = dict(tag_description='[Final][DesTree][randomsearrch][Hyperparams choosing][a][important features][BALANCED]', reference =reference ,estimator = estimator_iter, estimator_params ={}, local=False, split=True,  mlflow = True,
+            params = dict(tag_description='[SGDC][loss choosing] [a][important features][BALANCED]', reference =reference ,estimator = estimator_iter,
+                estimator_params ={'alpha':0.863521362656053, 'class_weight':'balanced', 'penalty': 'l2',
+                                    'early_stopping':True, 'n_iter_no_change':16},
+                local=False, split=True,  mlflow = True,
                 experiment_name=experiment,imputer= 'SimpleImputer', imputer_params = {}, scaler_professionals= 'MinMaxScaler' , scaler_professionals_params = {},
-             scaler_time= 'RobustScaler', scaler_time_params={}, scaler_amount='RobustScaler', scaler_amount_params={} , scaler_participants='RobustScaler',
+             scaler_time= 'StandardScaler', scaler_time_params={}, scaler_amount='RobustScaler', scaler_amount_params={} , scaler_participants='MinMaxScaler',
              scaler_participant_params={} , grid_search_choice= True) #agregar
 
 
@@ -563,8 +572,17 @@ if __name__ == "__main__":
             # scaler_professionals ='MinMaxScaler'
             # scaler_time ='RobustScaler'
 
+
             #Low variability less high values
             # scaler_amount = 'RobustScaler'
             # scaler_participants ='MinMaxScaler'
             # scaler_professionals ='MinMaxScaler'
             # scaler_time ='StandardScaler'
+
+            #Best DecisionTree
+            # DecisionTreeClassifier(class_weight='balanced', max_depth=3.853659650929652, max_features='log2',
+             #min_samples_split=0.2130615824774026, min_weight_fraction_leaf=0.40855752460926786
+
+             #Best SGDC
+             #SGDClassifier(alpha=0.863521362656053, class_weight='balanced', 'penalty': 'l2',
+             #early_stopping=True, n_iter_no_change=16)) #Check the loss function
