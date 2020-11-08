@@ -9,6 +9,11 @@ from invesscience.joanna_merge import get_training_data
 import pandas as pd
 
 
+def compute_precision_cv(y_true, y_pred, labels=None, pos_label=1, average='binary', sample_weight=None, zero_division=1):
+
+
+    return precision_score(y_true, y_pred, labels=None, pos_label=1, average='binary', sample_weight=None, zero_division=1)
+
 def compute_precision(y_pred, y_true):
 
 

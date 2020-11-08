@@ -21,7 +21,7 @@ from sklearn.pipeline import Pipeline, make_pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from termcolor import colored
 from xgboost import XGBRegressor
-from invesscience.utils import compute_f1, simple_time_tracker, clean_data, compute_precision
+from invesscience.utils import compute_f1, simple_time_tracker, clean_data, compute_precision, compute_precision_cv
 from invesscience.joanna_merge import get_training_data
 from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
@@ -38,6 +38,8 @@ from sklearn.model_selection import GridSearchCV
 from scipy.stats import uniform
 from xgboost import XGBClassifier
 
+
+warnings.filterwarnings('ignore')
 
 
 MLFLOW_URI = "https://mlflow.lewagon.co/"
@@ -335,11 +337,10 @@ class Trainer(object):
                     'model_use__min_samples_split': uniform(0,1),
                     'model_use__min_weight_fraction_leaf': uniform(0,0.5),
                     'model_use__class_weight' : [None, 'balanced'],
-                    'model_use__ccp_alpha':  uniform(0,1),
                     'model_use__max_features': ['auto', 'sqrt', 'log2'],
                     },  #param depending of the model to use
                 cv=30,
-                scoring="f1",
+                scoring='precision_train',
                 n_iter = 100,
                 n_jobs = -1 )
 
@@ -517,40 +518,40 @@ if __name__ == "__main__":
 
 
 
+    for i in range(10):
+        for estimator_iter in [#'LogisticRegression' ,'xgboost',
+                                 #'adaboost'
+                                 'DecisionTree']:
 
-    for estimator_iter in [#'LogisticRegression' ,'xgboost',
-                             #'adaboost'
-                             'DecisionTree']:
+    #ADABOOST : DecisionTree()
 
-#ADABOOST : DecisionTree()
-
-        params = dict(tag_description='[DesTree][randomsearrch][Hyperparams choosing][a][important features][BALANCED]', reference =reference ,estimator = estimator_iter, estimator_params ={}, local=False, split=True,  mlflow = True,
-            experiment_name=experiment,imputer= 'SimpleImputer', imputer_params = {}, scaler_professionals= 'MinMaxScaler' , scaler_professionals_params = {},
-         scaler_time= 'RobustScaler', scaler_time_params={}, scaler_amount='RobustScaler', scaler_amount_params={} , scaler_participants='RobustScaler',
-         scaler_participant_params={} , grid_search_choice= True) #agregar
-
-
-
-        print("############   Loading Data   ############")
-
-        df = clean_data(reference)
-        df = df[columnas]
-        y_train = df["target"]
-        X_train = df.drop(columns =['target']) #Change when we have categorical var
-        del df
-        print("shape: {}".format(X_train.shape))
-        print("size: {} Mb".format(X_train.memory_usage().sum() / 1e6))
-        # Train and save model, locally and
-        t = Trainer(X=X_train, y=y_train, **params)
-        del X_train, y_train
+            params = dict(tag_description='[Final][DesTree][randomsearrch][Hyperparams choosing][a][important features][BALANCED]', reference =reference ,estimator = estimator_iter, estimator_params ={}, local=False, split=True,  mlflow = True,
+                experiment_name=experiment,imputer= 'SimpleImputer', imputer_params = {}, scaler_professionals= 'MinMaxScaler' , scaler_professionals_params = {},
+             scaler_time= 'RobustScaler', scaler_time_params={}, scaler_amount='RobustScaler', scaler_amount_params={} , scaler_participants='RobustScaler',
+             scaler_participant_params={} , grid_search_choice= True) #agregar
 
 
-        print(colored("############  Training model   ############", "red"))
-        t.train()
-        print(colored("############  Evaluating model ############", "blue"))
-        t.evaluate()
-        print(colored("############   Saving model    ############", "green"))
-        t.save_model()
+
+            print("############   Loading Data   ############")
+
+            df = clean_data(reference)
+            df = df[columnas]
+            y_train = df["target"]
+            X_train = df.drop(columns =['target']) #Change when we have categorical var
+            del df
+            print("shape: {}".format(X_train.shape))
+            print("size: {} Mb".format(X_train.memory_usage().sum() / 1e6))
+            # Train and save model, locally and
+            t = Trainer(X=X_train, y=y_train, **params)
+            del X_train, y_train
+
+
+            print(colored("############  Training model   ############", "red"))
+            t.train()
+            print(colored("############  Evaluating model ############", "blue"))
+            t.evaluate()
+            print(colored("############   Saving model    ############", "green"))
+            t.save_model()
 
 
  ################------------Params founded ------#####################################################################
