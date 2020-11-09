@@ -93,13 +93,13 @@ class Trainer(object):
     def get_estimator(self):
         estimator = self.kwargs.get("estimator", self.ESTIMATOR)
         if estimator == "LogisticRegression":
-            model = LogisticRegression()
+            model = LogisticRegression(class_weight= 'balanced')
         elif estimator == "SVC":
             model = SVC(class_weight='balanced' )
         elif estimator == "KNeighborsClassifier":
             model = KNeighborsClassifier(weights = 'distance')
         elif estimator == "DecisionTree":
-            model = DecisionTreeClassifier()
+            model = DecisionTreeClassifier(class_weight ='balanced')
 
         elif estimator == "RandomForestClassifier":
             model = RandomForestClassifier(class_weight=None)
@@ -255,12 +255,17 @@ class Trainer(object):
 
         # Random search
         if self.grid_search_choice:
-            grid_search = GridSearchCV(
+            grid_search = RandomizedSearchCV(
                 self.pipeline,
-                param_grid ={
+                param_distributions ={
 
                     'model_use__loss' : ['hinge', 'modified_huber', 'squared_hinge'],
-
+                    'model_use__penalty': ['l2'],
+                    'model_use__alpha': uniform(0,1),
+                    'model_use__early_stopping': [True],
+                    'model_use__validation_fraction': uniform(0,0.3),
+                    'model_use__n_iter_no_change':randint(1,40),
+                    'model_use__class_weight': ['balanced']
 
                     },  #param depending of the model to use
                 cv=30,
@@ -332,7 +337,7 @@ class Trainer(object):
 
     def save_model(self):
         """Save the model into a .joblib format"""
-        joblib.dump(self.pipeline, 'model.joblib')
+        joblib.dump(self.pipeline, 'monday_model.joblib')
         print(colored("model.joblib saved locally", "green"))
 
     ### MLFlow methods
@@ -402,22 +407,21 @@ if __name__ == "__main__":
 
     for i in range(1):
         for estimator_iter in [
-                                'SGDC'
+                                'SGDC',
                                 #'GradientBoostingClassifier',
                                 #'LogisticRegression'
                                 #,'xgboost',
                                  #'adaboost'
-                                 #'DecisionTree'
+                                 #,'DecisionTree'
                                  ]:
 
     #ADABOOST : DecisionTree()
 
-            params = dict(tag_description='[SGDC][loss choosing] [a][important features][BALANCED]', reference =reference ,estimator = estimator_iter,
-                estimator_params ={'alpha':0.863521362656053, 'class_weight':'balanced', 'penalty': 'l2',
-                                    'early_stopping':True, 'n_iter_no_change':16},
+            params = dict(tag_description='[New][SGDC][RandomSearch] [a][important features][BALANCED]', reference =reference ,estimator = estimator_iter,
+                estimator_params ={},
                 local=False, split=True,  mlflow = True, experiment_name=experiment,
                 imputer= 'SimpleImputer', imputer_params = {'strategy' :'most_frequent'},
-                  grid_search_choice= False) #agregar
+                  grid_search_choice= True) #agregar
 
 
 
