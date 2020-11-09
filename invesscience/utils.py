@@ -7,6 +7,7 @@ from sklearn.metrics import f1_score
 import os
 from invesscience.joanna_merge import get_training_data
 import pandas as pd
+from invesscience.joanna_clean_data_felipe import clean_training_data
 
 
 def compute_precision_cv(y_true, y_pred, labels=None, pos_label=1, average='binary', sample_weight=None, zero_division=1):
@@ -41,88 +42,34 @@ def simple_time_tracker(method):
 
     return timed
 
-def clean_data(reference):
 
-    ''' quit nan observations with more than X nan values
-        quit outliers'''
+def get_data_filled(reference = 'a', target_to_drop ='exit' ):
 
+    ''' just working for reference A for the moment '''
     path = os.path.dirname(os.path.dirname(__file__))
 
-    companies= get_training_data(reference)
+    #After feature selection
 
-    #Drop not important columns
-    companies = companies.drop(columns= ['normalized_name','founded_at', 'description' ,'exit', 'exit_date', f'date_series_{reference}', 'closed_at']).set_index('id')
+    features_a=['id',
+                'category_code', 'country_code', 'state_code', 'founded_at', 'timediff_founded_series_a',
+                 'time_diff_series_a_now', 'participants_a', 'raised_amount_usd_a',
+                 'rounds_before_a', 'mean_comp_worked_before', 'founder_count', 'graduate', 'MBA_bool', 'cs_bool', 'top_20_bool', 'mean_comp_founded_before',
+                 'female_ratio',
+                 'exit','target']
 
-    #quit observation with more than 5 nan
-    companies = companies[companies.isnull().sum(axis=1) < 5]
+    companies_total = get_training_data(reference=reference, cut="2014")
+    companies_total = clean_training_data(companies_total, reference=reference)
 
-    #quiting outliers
-    companies = companies[companies[f'raised_amount_usd_{reference}']<=450000000]
+    df = pd.read_csv(os.path.join(path, 'raw_data' , 'last_complete_a.csv'), sep=';')
+    companies_total_filled_a = companies_total[features_a][companies_total[features_a].isnull().sum(axis = 1)<3].reset_index(drop=True)
+    companies_total_filled_a['country_code'] = df['country_code']
+    companies_total_filled_a['state_code'] = df['state_code']
 
-    #Standarizing STATES
-    #henri df
-    df = pd.read_csv(os.path.join(path,"raw_data","datanamed_completed.csv"), sep=';', header=1)
-    df = df[df.country_code=='USA'][['id', 'state_code']]
-
-    merge_1 = companies.merge(df, how ='left', on = 'id')
-    dict2 = merge_1.state_code_x.reset_index(drop=True).to_dict()
-    dict1 = merge_1.state_code_y.reset_index(drop=True).to_dict()
-    for i in dict1:
-        if type(merge_1.state_code_y.reset_index(drop=True).to_dict()[i]) == type(""):
-            dict2[i] = dict1[i]
-        else:
-            dict2[i] = 'other'
-    merge_1['state_code'] = dict2.values()
-    merge_1 = merge_1.drop(columns = ['state_code_y', 'state_code_x'])
-
-    #Completing Countries columns
-
-    df = pd.read_csv(os.path.join(path,"raw_data","countries_filled.csv"), sep=';')[['id','country_code', 'state_code']] #Warning: Modify the path!!!!
+    companies_total_filled_a = companies_total_filled_a[companies_total_filled_a['category_code'].notna()]
 
 
-    merge_2 = merge_1.merge(df, how ='left', on = 'id')
-
-    dict1 = merge_2.state_code_y.reset_index(drop=True).to_dict()
-    dict2 = merge_2.state_code_x.reset_index(drop=True).to_dict()
-    dict3 = merge_2.country_code_y.reset_index(drop=True).to_dict()
-    dict4 = merge_2.country_code_x.reset_index(drop=True).to_dict()
-
-    for i in dict1:
-        if type(merge_2.state_code_y.reset_index(drop=True).to_dict()[i]) == type(""):
-            dict2[i] = dict1[i]
-
-    for i in dict3:
-        if type(merge_2.country_code_y.reset_index(drop=True).to_dict()[i]) == type(""):
-            dict4[i] = dict3[i]
-
-    merge_2['state_code'] = dict2.values()
-    merge_2['country_code'] = dict4.values()
-    merge_2 = merge_2.drop(columns = ['state_code_y', 'state_code_x', 'country_code_y', 'country_code_x'])
-
-    # Completing the categories
-
-    df =pd.read_csv(os.path.join(path,"raw_data","categories_filled.csv"), sep=';')[['id', 'category_code']]
-
-    merge_3 = merge_2.merge(df, how ='left', on = 'id')
-
-    dict1 = merge_3.category_code_y.reset_index(drop=True).to_dict()
-    dict2 = merge_3.category_code_x.reset_index(drop=True).to_dict()
-
-    for i in dict1:
-        if type(merge_3.category_code_y.reset_index(drop=True).to_dict()[i]) == type(""):
-            dict2[i] = dict1[i]
-
-    merge_3['category_code'] = dict2.values()
-    merge_3 = merge_3.drop(columns = ['category_code_x', 'category_code_y'])
+    return companies_total_filled_a.set_index('id').drop(columns = [target_to_drop])
 
 
-    if reference == 0:
-        df = pd.read_csv(os.path.join(path,"raw_data","reference0_filled.csv"), sep=';')
-        merge_3['state_code'] = df.state_code
-        merge_3['country_code'] = df.country_code
-        merge_3['category_code'] = df.category_code
-        return merge_3.set_index('id')
-
-    return merge_3.set_index('id')
 
 

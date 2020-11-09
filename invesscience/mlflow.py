@@ -21,7 +21,7 @@ from sklearn.pipeline import Pipeline, make_pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from termcolor import colored
 from xgboost import XGBRegressor
-from invesscience.utils import compute_f1, simple_time_tracker, clean_data, compute_precision, compute_precision_cv
+from invesscience.utils import compute_f1, simple_time_tracker, compute_precision, compute_precision_cv, get_data_filled
 from invesscience.joanna_merge import get_training_data
 from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
@@ -38,7 +38,8 @@ from sklearn.model_selection import GridSearchCV
 from scipy.stats import uniform, randint
 from xgboost import XGBClassifier
 from sklearn.linear_model import SGDClassifier
-
+from sklearn.preprocessing import OrdinalEncoder
+from sklearn.preprocessing import Binarizer
 
 
 warnings.filterwarnings('ignore')
@@ -215,109 +216,33 @@ class Trainer(object):
 
     def set_pipeline(self):
 
-        #Column spliting
-        if self.reference=='a':
-            categorical_features = list(self.X_train.select_dtypes('object').columns)
+        categorical_features_ohe = ['category_code', 'country_code','state_code', 'founded_at','timediff_founded_series_a', 'time_diff_series_a_now',  'founder_count', 'rounds_before_a' , 'raised_amount_usd_a'] #first use imputer /after ohe
 
-            # top_features_num = []#'top_5', 'top_20','top_50']
-            # boolean_features = ['MBA_bool', 'cs_bool', 'phd_bool' ,'top_5_bool', 'top_20_bool', 'top_50_bool']
-            # investment_amount_features = [f'raised_amount_usd_{self.reference}', f'raised_before_{self.reference}', f'rounds_before_{self.reference}' ]
-            # time_feature = []#f'timediff_founded_series_{self.reference}']
-            # participant_feature = [f'participants_{self.reference}', f'participants_before_{self.reference}']
-            # professional_features = [#'phd', 'MBA', 'cs',
-            #                         'graduate', 'undergrad',
-            #                         'professional', 'degree_count','founder_count',
-            #                         'n_female_founders','female_ratio', 'mean_comp_founded_ever',
-            #                         'mean_comp_founded_before']
+        categorical_features_ordinal = ['participants_a', 'mean_comp_worked_before'] # impute first, after ordinals
 
+        booleans_features = ['graduate',  'MBA_bool', 'cs_bool', 'top_20_bool', 'female_ratio'] # ordinals/binaries
 
-            professional_features = ['MBA' , 'founder_count','female_ratio' , 'mean_comp_founded_ever','mean_comp_founded_before',
-                                     #'phd' , 'cs','graduate', 'undergrad', 'professional', 'degree_count','n_female_founders'
-                                                               ]
-            top_features_num = ['top_5'
-                                #,'top_20','top_50'
-                               ]
-
-
-            boolean_features = [#'MBA_bool',
-                                'cs_bool'
-                                #,'phd_bool' ,'top_5_bool', 'top_20_bool', 'top_50_bool'
-                               ]
-
-            investment_amount_features = [f'raised_amount_usd_{reference}', f'raised_before_{reference}', f'rounds_before_{reference}' ] #importants
-
-            time_feature = [f'timediff_founded_series_{reference}']#importants
-
-            participant_feature = ['participants_a', 'participants_before_a'] #importants
-
-
-        elif self.reference==0:
-            categorical_features = list(self.X_train.select_dtypes('object').columns)
-
-            # top_features_num = []#'top_5', 'top_20','top_50']
-            # boolean_features = ['MBA_bool', 'cs_bool', 'phd_bool' ,'top_5_bool', 'top_20_bool', 'top_50_bool']
-            # investment_amount_features = [f'raised_amount_usd_{self.reference}']
-            # time_feature = []#f'timediff_founded_series_{self.reference}']
-            # participant_feature = [f'participants_{self.reference}']
-            # professional_features = [#'phd', 'MBA', 'cs',
-            #                         'graduate', 'undergrad',
-            #                         'professional', 'degree_count','founder_count',
-            #                         'n_female_founders','female_ratio', 'mean_comp_founded_ever',
-            #                         'mean_comp_founded_before']
-
-            professional_features = ['MBA' , 'founder_count','female_ratio' , 'mean_comp_founded_ever','mean_comp_founded_before',
-                                     #'phd' , 'cs','graduate', 'undergrad', 'professional', 'degree_count','n_female_founders'
-                                                               ]
-            top_features_num = ['top_5'
-                                #,'top_20','top_50'
-                               ]
-
-
-            boolean_features = [#'MBA_bool',
-                                'cs_bool'
-                                #,'phd_bool' ,'top_5_bool', 'top_20_bool', 'top_50_bool'
-                               ]
-
-            investment_amount_features = [f'raised_amount_usd_{reference}'] #importants
-
-            time_feature = [f'timediff_founded_series_{reference}']#importants
-
-            participant_feature = [f'participants_{reference}'] #importants
 
 
         #Defining imputers
-
-        notdegrees_imputer = self.get_imputer()
-        raised_amount_scaler = self.get_scaler_raised_amount()
-        profesionals_scaler = self.get_scaler_professionals()
-        timediff_scaler = self.get_scaler_time()
-        participant_scaler = self.get_scaler_participant()
+        imputer = self.get_imputer()
 
 
         #pipes for each feature
 
-        pipe_amounts = Pipeline([('raised_amount_imputer', notdegrees_imputer),
-                                 ('raised_amount_scaler', raised_amount_scaler)])
+        pipe_ohe = Pipeline([('imputer', imputer),
+                            ('ohe', OneHotEncoder(handle_unknown='ignore'))])
 
-        pipe_categorical = Pipeline([('ohe', OneHotEncoder(handle_unknown='ignore'))])
+        pipe_ordinal = Pipeline([('imputer_ord', imputer),
+                                ('ord_encoder', OrdinalEncoder())])
 
-        pipe_professionals = Pipeline([('profesionals_scaler', profesionals_scaler)])
-
-        pipe_time = Pipeline([('time_imput', notdegrees_imputer),
-                              ('timediff_scaler', timediff_scaler)])
-
-        pipe_participants =  Pipeline([('participant_imputer', notdegrees_imputer ),
-                                      ('participant_scaler', participant_scaler)])
+        pipe_booleans = Pipeline([('bin_encoder', Binarizer())])
 
         #process
 
-        feateng_blocks = [ ('participant_scaler', pipe_participants, participant_feature),
-                           ('investment_scaler', pipe_amounts, investment_amount_features),# cambiar en caso de 0
-                           ('timediff_scaler', pipe_time, time_feature),
-                           ('profesionals_scaler', pipe_professionals, professional_features),
-                           ('top_scale', MinMaxScaler(), top_features_num), #just to stablish order of output columns
-                           ('bolean_var',  MinMaxScaler(), boolean_features), #just to stablish order of output columns
-                           ('cat_pipe', pipe_categorical, categorical_features)]
+        feateng_blocks = [ ('cat_ohe', pipe_ohe, categorical_features_ohe), #just to stablish order of output columns
+                           ('cat_ord',  pipe_ordinal, categorical_features_ordinal), #just to stablish order of output columns
+                           ('cat_bin', pipe_booleans, booleans_features)]
 
 
 
@@ -327,8 +252,6 @@ class Trainer(object):
         #final_pipeline
         self.pipeline = Pipeline(steps = [('preprocessing', preprocessor),
                             ('model_use', self.get_estimator())] )
-
-
 
         # Random search
         if self.grid_search_choice:
@@ -474,52 +397,10 @@ if __name__ == "__main__":
     #Change the reference HERE !!!
 
 
-    reference = 0
-
-    if reference =='a':
-        #without feature selection
-        columnas = [f'participants_{reference}',f'participants_before_{reference}',f'raised_amount_usd_{reference}', f'raised_before_{reference}', f'rounds_before_{reference}',
-                                                            #f'timediff_founded_series_{reference}',
-                                                            #'phd', 'MBA', 'cs',
-                                                            'graduate', 'undergrad', 'professional', 'degree_count',
-                                                            'founder_count', 'n_female_founders','female_ratio',
-                                                            'mean_comp_founded_ever', 'mean_comp_founded_before',
-                                                            #'top_5', 'top_20','top_50',
-                                                            'MBA_bool', 'cs_bool', 'phd_bool' ,'top_5_bool', 'top_20_bool', 'top_50_bool',
-                                                            'state_code', 'country_code', 'category_code','target' ]
-
-        #with feature selection done
-        columnas = ['participants_a', 'participants_before_a', 'raised_amount_usd_a',
-                     'raised_before_a', 'rounds_before_a', 'timediff_founded_series_a', 'MBA', 'founder_count',
-                     'female_ratio', 'mean_comp_founded_ever', 'mean_comp_founded_before', 'top_5', 'MBA_bool',
-                     'cs_bool', 'top_5_bool', 'state_code', 'country_code', 'category_code', 'target']
+    reference = 'a'
 
 
-
-
-
-
-    elif reference==0:
-        #without feature selection
-        columnas = [f'participants_{reference}',f'raised_amount_usd_{reference}',
-                                                            #f'timediff_founded_series_{reference}',
-                                                            #'phd', 'MBA', 'cs',
-                                                            'graduate', 'undergrad', 'professional', 'degree_count',
-                                                            'founder_count', 'n_female_founders','female_ratio',
-                                                            'mean_comp_founded_ever', 'mean_comp_founded_before',
-                                                            #'top_5', 'top_20','top_50',
-                                                            'MBA_bool', 'cs_bool', 'phd_bool' ,'top_5_bool', 'top_20_bool', 'top_50_bool',
-                                                            'state_code', 'country_code', 'category_code','target' ]
-
-
-        #with feature selection done
-        columnas = [f'participants_{reference}', f'raised_amount_usd_{reference}',f'timediff_founded_series_{reference}', 'MBA', 'founder_count',
-                             'female_ratio', 'mean_comp_founded_ever', 'mean_comp_founded_before', 'top_5', 'MBA_bool',
-                             'cs_bool', 'top_5_bool', 'state_code', 'country_code', 'category_code', 'target']
-
-
-
-    for i in range(5):
+    for i in range(1):
         for estimator_iter in [
                                 'SGDC'
                                 #'GradientBoostingClassifier',
@@ -534,17 +415,16 @@ if __name__ == "__main__":
             params = dict(tag_description='[SGDC][loss choosing] [a][important features][BALANCED]', reference =reference ,estimator = estimator_iter,
                 estimator_params ={'alpha':0.863521362656053, 'class_weight':'balanced', 'penalty': 'l2',
                                     'early_stopping':True, 'n_iter_no_change':16},
-                local=False, split=True,  mlflow = True,
-                experiment_name=experiment,imputer= 'SimpleImputer', imputer_params = {}, scaler_professionals= 'MinMaxScaler' , scaler_professionals_params = {},
-             scaler_time= 'StandardScaler', scaler_time_params={}, scaler_amount='RobustScaler', scaler_amount_params={} , scaler_participants='MinMaxScaler',
-             scaler_participant_params={} , grid_search_choice= True) #agregar
+                local=False, split=True,  mlflow = True, experiment_name=experiment,
+                imputer= 'SimpleImputer', imputer_params = {'strategy' :'most_frequent'},
+                  grid_search_choice= False) #agregar
 
 
 
             print("############   Loading Data   ############")
 
-            df = clean_data(reference)
-            df = df[columnas]
+            df = get_data_filled(reference)
+
             y_train = df["target"]
             X_train = df.drop(columns =['target']) #Change when we have categorical var
             del df
