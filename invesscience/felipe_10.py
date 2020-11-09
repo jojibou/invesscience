@@ -7,7 +7,7 @@ import os
 def n_female_founders(companies, founders, relationships):
     '''get your numbers of females for each company ;) '''
 
-    merge_1 = relationships.merge(founders[['person_object_id', 'gender']], how = 'inner', on = 'person_object_id')
+    merge_1 = relationships.merge(founders[['person_object_id', 'gender']], how = 'left', on = 'person_object_id')
     merge_1 = merge_1[merge_1.founder ==True]
     merge_1 ['n_female_founders'] = merge_1.gender.map(lambda x: 1 if x=='Female' else 0)
     merge_1 = merge_1.groupby('relationship_object_id',as_index=False).sum()[['relationship_object_id','n_female_founders']]
