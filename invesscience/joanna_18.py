@@ -5,6 +5,8 @@ import os
 def degree_standardisation(x):
     if "harvard" in x:
         return "harvard university"
+    if "harverd" in x:
+        return "harvard university"
     if "stanford" in x:
         return "stanford university"
     if "massachusetts institute of technology (mit)" in x:
