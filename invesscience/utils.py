@@ -43,21 +43,30 @@ def simple_time_tracker(method):
     return timed
 
 
-def get_data_filled(reference = 'a', target_to_drop ='exit' ):
+def get_data_filled(reference = 'a', target_to_drop ='exit' , year = '2014'):
 
     ''' just working for reference A for the moment '''
     path = os.path.dirname(os.path.dirname(__file__))
 
     #After feature selection
+    if year =='2014':
+        features_a=['id',
+                    'category_code', 'country_code','state_code', 'founded_at','timediff_founded_series_a', 'time_diff_series_a_now', 'founder_count',
+                    'rounds_before_a' , 'raised_amount_usd_a','participants_a', 'mean_comp_worked_before',
+                    'graduate',  'MBA_bool', 'cs_bool', 'top_20_bool', 'female_ratio', 'exit', 'target']
 
-    features_a=['id',
-                'category_code', 'country_code', 'state_code', 'founded_at', 'timediff_founded_series_a',
-                 'time_diff_series_a_now', 'participants_a', 'raised_amount_usd_a',
-                 'rounds_before_a', 'mean_comp_worked_before', 'founder_count', 'graduate', 'MBA_bool', 'cs_bool', 'top_20_bool', 'mean_comp_founded_before',
-                 'female_ratio',
-                 'exit','target']
 
-    companies_total = get_training_data(reference=reference, cut="2014")
+
+
+    if year == '2009':
+        features_a=['id',
+                    'category_code', 'country_code','state_code', 'founded_at','timediff_founded_series_a',  'founder_count',
+                    'rounds_before_a' , 'raised_amount_usd_a','participants_a', 'mean_comp_worked_before',
+                    'graduate',  'MBA_bool', 'cs_bool', 'top_20_bool', 'female_ratio', 'exit', 'target']
+
+
+
+    companies_total = get_training_data(reference=reference, cut=year)
     companies_total = clean_training_data(companies_total, reference=reference)
 
     df = pd.read_csv(os.path.join(path, 'raw_data' , 'last_complete_a.csv'), sep=';')

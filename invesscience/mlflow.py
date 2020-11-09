@@ -40,6 +40,9 @@ from xgboost import XGBClassifier
 from sklearn.linear_model import SGDClassifier
 from sklearn.preprocessing import OrdinalEncoder
 from sklearn.preprocessing import Binarizer
+from imblearn.pipeline import make_pipeline
+from imblearn.over_sampling import SMOTE
+from imblearn.pipeline import Pipeline as Pipeline_imb
 
 
 warnings.filterwarnings('ignore')
@@ -73,6 +76,8 @@ class Trainer(object):
         self.pipeline = None
         self.kwargs = kwargs
         self.local = kwargs.get("local", False)  # if True training is done locally
+        self.year = kwargs.get("year", '2014')
+        self.smote = kwargs.get("smote", False)
         self.mlflow = kwargs.get("mlflow", False)
         self.reference = kwargs.get("reference", 'a')
         self.tag = kwargs.get("tag_description", "nada")
@@ -95,14 +100,14 @@ class Trainer(object):
         if estimator == "LogisticRegression":
             model = LogisticRegression(class_weight= 'balanced')
         elif estimator == "SVC":
-            model = SVC(class_weight='balanced' )
+            model = SVC()
         elif estimator == "KNeighborsClassifier":
-            model = KNeighborsClassifier(weights = 'distance')
+            model = KNeighborsClassifier()
         elif estimator == "DecisionTree":
             model = DecisionTreeClassifier(class_weight ='balanced')
 
         elif estimator == "RandomForestClassifier":
-            model = RandomForestClassifier(class_weight=None)
+            model = RandomForestClassifier()
             self.model_params = {  # 'n_estimators': [int(x) for x in np.linspace(start = 50, stop = 200, num = 10)],
                 'max_features': ['auto']}
             # 'max_depth' : [int(x) for x in np.linspace(10, 110, num = 11)]}
@@ -114,7 +119,21 @@ class Trainer(object):
             model = AdaBoostClassifier()
 
         elif estimator =='voting':
-            model = VotingClassifier()
+            model_SGDC = SGDClassifier(loss= 'modified_huber' , penalty= 'l2' ,
+                                alpha= 0.29581478408305245, epsilon=0.6099153211481263,
+                                early_stopping= True, n_iter_no_change= 10  ,validation_fraction= 0.3)
+
+            model_SVC = SVC(C=1.2453202919192343, coef0=1.9383630487762569, kernel='sigmoid', probability =True)
+
+            model_random = RandomForestClassifier(bootstrap=False, ccp_alpha=4.795609695177735,
+                                                     criterion='entropy', max_depth=4,
+                                            max_features='sqrt', max_samples=0.21073053471890313, n_estimators=254)
+
+            model = VotingClassifier(estimators=[('sgdc', model_SGDC),
+                                                ('random', model_random),
+                                                ('svc', model_SVC)]
+
+                                ,voting='hard')
         elif estimator =='SGDC':
             model = SGDClassifier()
 
@@ -216,7 +235,15 @@ class Trainer(object):
 
     def set_pipeline(self):
 
-        categorical_features_ohe = ['category_code', 'country_code','state_code', 'founded_at','timediff_founded_series_a', 'time_diff_series_a_now',  'founder_count', 'rounds_before_a' , 'raised_amount_usd_a'] #first use imputer /after ohe
+
+        if self.year == '2009':
+            categorical_features_ohe = ['category_code', 'country_code','state_code', 'founded_at','timediff_founded_series_a',  'founder_count', 'rounds_before_a' , 'raised_amount_usd_a'] #first use imputer /after ohe
+
+
+        if self.year == '2014':
+            categorical_features_ohe = ['category_code', 'country_code','state_code', 'founded_at','timediff_founded_series_a', 'time_diff_series_a_now' , 'founder_count', 'rounds_before_a' , 'raised_amount_usd_a'] #first use imputer /after ohe
+
+
 
         categorical_features_ordinal = ['participants_a', 'mean_comp_worked_before'] # impute first, after ordinals
 
@@ -226,32 +253,43 @@ class Trainer(object):
 
         #Defining imputers
         imputer = self.get_imputer()
-
+        imputer_2= SimpleImputer(strategy = 'most_frequent')
 
         #pipes for each feature
 
-        pipe_ohe = Pipeline([('imputer', imputer),
+        pipe_ohe = Pipeline([('imputer', imputer_2),
                             ('ohe', OneHotEncoder(handle_unknown='ignore'))])
 
         pipe_ordinal = Pipeline([('imputer_ord', imputer),
-                                ('ord_encoder', OrdinalEncoder())])
-
-        pipe_booleans = Pipeline([('bin_encoder', Binarizer())])
+                                ('ord_encoder', OneHotEncoder(handle_unknown='ignore'))
+                           ])
 
         #process
 
-        feateng_blocks = [ ('cat_ohe', pipe_ohe, categorical_features_ohe), #just to stablish order of output columns
-                           ('cat_ord',  pipe_ordinal, categorical_features_ordinal), #just to stablish order of output columns
-                           ('cat_bin', pipe_booleans, booleans_features)]
+        feateng_blocks = [ ('cat_ohe', pipe_ohe, categorical_features_ohe),
+                           ('cat_ord',  pipe_ordinal, categorical_features_ordinal)
+                           ]
+
 
 
 
         #Columntransformer keeping order
-        preprocessor = ColumnTransformer(feateng_blocks)
+        preprocessor = ColumnTransformer(feateng_blocks, remainder= 'passthrough')
 
         #final_pipeline
         self.pipeline = Pipeline(steps = [('preprocessing', preprocessor),
                             ('model_use', self.get_estimator())] )
+
+
+        if self.smote:
+
+            smote =SMOTE(sampling_strategy = 'auto', random_state= 42, k_neighbors= 20)
+            self.pipeline =Pipeline_imb([
+                ('prep',preprocessor),
+                ('smote', smote),
+                ('model_use', self.get_estimator())])
+
+
 
         # Random search
         if self.grid_search_choice:
@@ -259,13 +297,11 @@ class Trainer(object):
                 self.pipeline,
                 param_distributions ={
 
-                    'model_use__loss' : ['hinge', 'modified_huber', 'squared_hinge'],
-                    'model_use__penalty': ['l2'],
-                    'model_use__alpha': uniform(0,1),
-                    'model_use__early_stopping': [True],
-                    'model_use__validation_fraction': uniform(0,0.3),
-                    'model_use__n_iter_no_change':randint(1,40),
-                    'model_use__class_weight': ['balanced']
+                    'model_use__C' : uniform(1,10),
+                    'model_use__kernel': ['sigmoid'],
+                    'model_use__gamma': ['auto', 'scale'],
+                    'model_use__coef0': uniform(0,2),
+                    'smote__sampling_strategy': uniform(0,100)
 
                     },  #param depending of the model to use
                 cv=30,
@@ -403,31 +439,40 @@ if __name__ == "__main__":
 
 
     reference = 'a'
+    year= '2014'
+
+
 
 
     for i in range(1):
-        for estimator_iter in [
-                                'SGDC',
+
+
+        for estimator_iter in [#'voting'
+                                #'SGDC',
                                 #'GradientBoostingClassifier',
                                 #'LogisticRegression'
-                                #,'xgboost',
-                                 #'adaboost'
-                                 #,'DecisionTree'
+                                'SVC',
+                                 #'adaboost',
+                                 #'DecisionTree'
+                                 #'RandomForestClassifier'
                                  ]:
 
     #ADABOOST : DecisionTree()
 
-            params = dict(tag_description='[New][SGDC][RandomSearch] [a][important features][BALANCED]', reference =reference ,estimator = estimator_iter,
+            params = dict(tag_description=f'[{estimator_iter}][SMOTE][{year}][{reference}][important features][BALANCED]', reference =reference, year = year ,estimator = estimator_iter,
                 estimator_params ={},
                 local=False, split=True,  mlflow = True, experiment_name=experiment,
-                imputer= 'SimpleImputer', imputer_params = {'strategy' :'most_frequent'},
-                  grid_search_choice= True) #agregar
+                imputer= 'KNNImputer', imputer_params = {'n_neighbors':21, 'weights': 'distance'},
+                  grid_search_choice= True, smote=True) #agregar
+
 
 
 
             print("############   Loading Data   ############")
 
-            df = get_data_filled(reference)
+            df = get_data_filled(reference='a',target_to_drop ='exit' , year = year)
+            #df= df[df.country_code=='USA']
+
 
             y_train = df["target"]
             X_train = df.drop(columns =['target']) #Change when we have categorical var
@@ -451,22 +496,14 @@ if __name__ == "__main__":
 
             #High precision more variability
 
-            # scaler_amount ='RobustScaler'
-            # scaler_participants ='RobustScaler'
-            # scaler_professionals ='MinMaxScaler'
-            # scaler_time ='RobustScaler'
-
-
-            #Low variability less high values
-            # scaler_amount = 'RobustScaler'
-            # scaler_participants ='MinMaxScaler'
-            # scaler_professionals ='MinMaxScaler'
-            # scaler_time ='StandardScaler'
-
             #Best DecisionTree
             # DecisionTreeClassifier(class_weight='balanced', max_depth=3.853659650929652, max_features='log2',
              #min_samples_split=0.2130615824774026, min_weight_fraction_leaf=0.40855752460926786
 
              #Best SGDC
-             #SGDClassifier(alpha=0.863521362656053, class_weight='balanced', 'penalty': 'l2',
-             #early_stopping=True, n_iter_no_change=16)) #Check the loss function
+             #SGDClassifier
+             #estimator_params ={'loss': 'epsilon_insensitive' ,'class_weight': 'balanced', 'penalty': 'l2' ,'alpha': 0.29581478408305245, 'epsilon':0.6099153211481263,
+                                    #'early_stopping': True, 'n_iter_no_change': 10  ,'validation_fraction' : 0.3}
+
+            #SVC
+            #SVC(C=1.2453202919192343, coef0=1.9383630487762569, kernel='sigmoid')
