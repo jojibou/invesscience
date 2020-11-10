@@ -301,7 +301,7 @@ class Trainer(object):
                     'model_use__kernel': ['sigmoid'],
                     'model_use__gamma': ['auto', 'scale'],
                     'model_use__coef0': uniform(0,2),
-                    'smote__sampling_strategy': uniform(0,100)
+                    'smote__sampling_strategy': uniform(0,1)
 
                     },  #param depending of the model to use
                 cv=30,
