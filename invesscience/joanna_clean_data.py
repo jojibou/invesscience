@@ -195,7 +195,7 @@ def clean_training_data(companies, reference="a"):
 
     #cleaning founded_at to year and becomes cat variable, pre_1996 and after
     companies["founded_at"] = companies.founded_at.dt.strftime('%Y')
-    companies["founded_at"] = companies.founded_at.map(clean_date)
+    companies["founded_at"] = companies.founded_at.map(clean_date).replace('NaT', np.nan)
 
     #new variable time since series a (when somoene enters a company in the product page, can specify within 5 years or 10 years or other >> will be the time_diff_series_a_now)
     companies[f"time_diff_series_{reference}_now"] = round(-(companies[f"date_series_{reference}"] - pd.to_datetime("31-12-2013"))/np.timedelta64(12, 'M')).map(clean_series)
