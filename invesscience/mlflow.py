@@ -43,7 +43,7 @@ from sklearn.preprocessing import Binarizer
 from imblearn.pipeline import make_pipeline
 from imblearn.over_sampling import SMOTE
 from imblearn.pipeline import Pipeline as Pipeline_imb
-
+from sklearn.inspection import permutation_importance
 
 
 MLFLOW_URI = "https://mlflow.lewagon.co/"
@@ -71,8 +71,10 @@ class Trainer(object):
         :param y:
         :param kwargs:
         """
+
         self.pipeline = None
         self.kwargs = kwargs
+        self.estimator_xgb = self.kwargs.get("estimator", self.ESTIMATOR)
         self.local = kwargs.get("local", False)  # if True training is done locally
         self.year = kwargs.get("year", '2014')
         self.smote = kwargs.get("smote", False)
@@ -88,7 +90,7 @@ class Trainer(object):
         self.split = self.kwargs.get("split", True)  # cf doc above
         if self.split:
             self.X_train, self.X_val, self.y_train, self.y_val = train_test_split(self.X_train, self.y_train,
-                                                                                  test_size=0.3)
+                                                                                  test_size=0.3, random_state = 42)
         self.nrows = self.X_train.shape[0]  # nb of rows to train on
         self.log_kwargs_params()
         self.log_machine_specs()
@@ -111,7 +113,8 @@ class Trainer(object):
             # 'max_depth' : [int(x) for x in np.linspace(10, 110, num = 11)]}
 
         elif estimator == "xgboost":
-            model = XGBClassifier(scale_pos_weight = 2.23)
+
+            model = XGBClassifier()
 
         elif estimator == "adaboost":
             model = AdaBoostClassifier()
@@ -133,7 +136,8 @@ class Trainer(object):
 
                                 ,voting='hard')
         elif estimator =='SGDC':
-            model = SGDClassifier()
+            model = SGDClassifier(loss= 'epsilon_insensitive' ,alpha=0.25302306090332494, class_weight='balanced', early_stopping=True, epsilon=0.7399967340475004, eta0=0.0001,
+             learning_rate='constant', n_iter_no_change=10, validation_fraction=0.3)
 
 
 
@@ -233,39 +237,82 @@ class Trainer(object):
 
     def set_pipeline(self):
 
+        if self.reference=='a':
 
-        if self.year == '2009':
-            categorical_features_ohe = ['category_code', 'country_code','state_code', 'founded_at','timediff_founded_series_a',  'founder_count', 'rounds_before_a' , 'raised_amount_usd_a'] #first use imputer /after ohe
+            if self.year == '2009':
+                categorical_features_1 = ['category_code', 'country_code','state_code', 'founded_at','timediff_founded_series_a']
 
-
-        if self.year == '2014':
-            categorical_features_ohe = ['category_code', 'country_code','state_code', 'founded_at','timediff_founded_series_a', 'time_diff_series_a_now' , 'founder_count', 'rounds_before_a' , 'raised_amount_usd_a'] #first use imputer /after ohe
-
-
-
-        categorical_features_ordinal = ['participants_a', 'mean_comp_worked_before'] # impute first, after ordinals
-
-        booleans_features = ['graduate',  'MBA_bool', 'cs_bool', 'top_20_bool', 'female_ratio'] # ordinals/binaries
+            elif self.year == '2014':
+                categorical_features_1 = ['category_code', 'country_code','state_code', 'founded_at','timediff_founded_series_a', 'time_diff_series_a_now'] #first use imputer /after ohe
 
 
-        #Defining imputers
-        imputer = self.get_imputer()
-        imputer_2= SimpleImputer(strategy = 'most_frequent')
+            categorical_features_2 = ['participants_a', 'raised_amount_usd_a', 'rounds_before_a', 'mean_comp_worked_before',  'founder_count', 'degree_count'] # impute first, after ordinals
 
-        #pipes for each feature
+            booleans_features = ['graduate', 'undergrad','professional', 'MBA_bool', 'cs_bool', 'phd_bool', 'top_20_bool', 'mean_comp_founded_before', 'female_ratio'] # ordinals/binaries
 
-        pipe_ohe = Pipeline([('imputer', imputer_2),
-                            ('ohe', OneHotEncoder(handle_unknown='ignore'))])
 
-        pipe_ordinal = Pipeline([('imputer_ord', imputer),
-                                ('ord_encoder', OneHotEncoder(handle_unknown='ignore'))
-                           ])
 
-        #process
 
-        feateng_blocks = [ ('cat_ohe', pipe_ohe, categorical_features_ohe),
-                           ('cat_ord',  pipe_ordinal, categorical_features_ordinal)
-                           ]
+            #Defining imputers
+            imputer = self.get_imputer()
+            imputer_2= SimpleImputer(strategy = 'most_frequent')
+
+            #pipes for each feature
+
+            pipe_1 = Pipeline([('imputer', imputer_2),
+                                ('ohe', OneHotEncoder(handle_unknown='ignore'))])
+
+            pipe_2 = Pipeline([('imputer_ord', imputer),
+                                    ('ord_encoder', OneHotEncoder(handle_unknown='ignore'))
+                               ])
+
+            pipe_bool =  Pipeline([('imputer_bool', imputer_2),
+                                    ('ord_encoder', OneHotEncoder(handle_unknown='ignore'))
+                               ])
+
+            #process
+
+            feateng_blocks = [ ('cat_ohe', pipe_1, categorical_features_1),
+                               ('cat_ord',  pipe_2, categorical_features_2),
+                               ('cat_bool',  pipe_bool, booleans_features)
+                               ]
+
+
+
+        elif self.reference ==0:
+
+            if self.year == '2014':
+                categorical_features_1 = ['category_code', 'country_code','state_code', 'founded_at','timediff_founded_series_0', 'time_diff_series_0_now' ] #first use imputer /after ohe
+
+
+            categorical_features_2 = ['participants_0' , 'raised_amount_usd_0','participants_0', 'mean_comp_worked_before','founder_count', 'degree_count'] # impute first, after ordinals
+
+            booleans_features = ['graduate', 'undergrad', 'professional',  'MBA_bool', 'cs_bool', 'phd_bool','top_20_bool', 'mean_comp_founded_before','female_ratio'] # ordinals/binaries
+
+
+            #Defining imputers
+            imputer = self.get_imputer()
+            imputer_2 = SimpleImputer(strategy = 'most_frequent')
+
+            #pipes for each feature
+
+            pipe_1 = Pipeline([('imputer', imputer_2),
+                                ('ohe', OneHotEncoder(handle_unknown='ignore'))])
+
+            pipe_2 = Pipeline([('imputer_ord', imputer),
+                                    ('ord_encoder', OneHotEncoder(handle_unknown='ignore'))
+                               ])
+
+            pipe_bool =  Pipeline([('imputer_bool', imputer_2),
+                                    ('ord_encoder', OneHotEncoder(handle_unknown='ignore'))
+                               ])
+            #process
+
+            feateng_blocks = [ ('cat_1', pipe_1, categorical_features_1),
+                               ('cat_2',  pipe_2, categorical_features_2),
+                               ('cat_bool', pipe_bool, booleans_features)]
+
+
 
 
         #Columntransformer keeping order
@@ -278,7 +325,7 @@ class Trainer(object):
 
         if self.smote:
 
-            smote =SMOTE(sampling_strategy = 'minority', random_state= 42, k_neighbors= 20)
+            smote =SMOTE(sampling_strategy = 'auto', random_state= 42, k_neighbors= 20)
             self.pipeline =Pipeline_imb([
                 ('prep',preprocessor),
                 ('smote', smote),
@@ -291,11 +338,18 @@ class Trainer(object):
                 self.pipeline,
                 param_distributions ={
 
-                    'model_use__C' : uniform(1,10),
-                    'model_use__kernel': ['sigmoid'],
-                    'model_use__gamma': ['auto', 'scale'],
-                    'model_use__coef0': uniform(0,2),
-                    'model_use__probability':[True]
+                    'model_use__learning_rate' : uniform(0,1),
+                    'model_use__n_estimators': randint(100,200),
+                    'model_use__max_depth': randint(5,10),
+                    'model_use__min_child_weight': randint(3,20),
+                    'model_use__gamma': uniform(0,1),
+                    'model_use__subsample': uniform(0,1),
+                    'model_use__colsample_bytree': uniform(0,1),
+                    'model_use__nthread': randint(4,20),
+                    'model_use__scale_pos_weight': randint(1,5),
+                    'model_use__seed': randint(10, 30),
+                    'model_use__booster':['gbtree', 'gblinear']
+
 
                     },  #param depending of the model to use
                 cv=30,
@@ -432,17 +486,18 @@ if __name__ == "__main__":
 
 
     reference = 'a'
-    year= '2014'
+    year= '2009'
 
 
     for i in range(1):
 
 
         for estimator_iter in [#'voting'
-                               # 'SGDC',
+                                #'SGDC'
+                                'xgboost',
                                 #'GradientBoostingClassifier',
                                 #'LogisticRegression'
-                                'SVC',
+                                #'SVC',
                                  #'adaboost',
                                  #'DecisionTree'
                                  #'RandomForestClassifier'
@@ -450,21 +505,24 @@ if __name__ == "__main__":
 
     #ADABOOST : DecisionTree()
 
-            params = dict(tag_description=f'[{estimator_iter}][SMOTE][{year}][{reference}][important features][BALANCED]', reference =reference, year = year ,estimator = estimator_iter,
+            params = dict(tag_description=f'[final][{estimator_iter}][random_state][{year}][{reference}]', reference =reference, year = year ,estimator = estimator_iter,
                 estimator_params ={},
                 local=False, split=True,  mlflow = True, experiment_name=experiment,
-                imputer= 'KNNImputer', imputer_params = {'n_neighbors':21, 'weights': 'distance'},
+                imputer= 'KNNImputer', imputer_params = {'n_neighbors':20, 'weights': 'distance'},
                   grid_search_choice= True, smote=True) #agregar
 
+#'learning_rate':0.478977150664321, 'max_depth':5, 'min_child_weight':9, 'n_estimators':119,'nthread':12, 'num_parallel_tree':1, 'random_state':22,  'scale_pos_weight':4, 'seed':22,'subsample':0.5439148763175726, 'tree_method':'exact'},
 
 
 
             print("############   Loading Data   ############")
 
-            df = get_data_filled(reference='a',target_to_drop ='exit' , year = year)
+            df = get_data_filled(reference=reference,target_to_drop ='exit' , year = year)
             #df= df[df.country_code=='USA']
-            print(df.info())
-            print(df.head())
+
+
+
+
 
             y_train = df["target"]
             X_train = df.drop(columns =['target']) #Change when we have categorical var
@@ -492,10 +550,13 @@ if __name__ == "__main__":
             # DecisionTreeClassifier(class_weight='balanced', max_depth=3.853659650929652, max_features='log2',
              #min_samples_split=0.2130615824774026, min_weight_fraction_leaf=0.40855752460926786
 
-             #Best SGDC
+             #Best SGDC ()
              #SGDClassifier
-             #estimator_params ={'loss': 'epsilon_insensitive' ,'class_weight': 'balanced', 'penalty': 'l2' ,'alpha': 0.29581478408305245, 'epsilon':0.6099153211481263,
-                                    #'early_stopping': True, 'n_iter_no_change': 10  ,'validation_fraction' : 0.3}
+             #estimator_params ={'loss': 'epsilon_insensitive' ,'class_weight': 'balanced',alpha=0.25302306090332494,
+             #class_weight='balanced', early_stopping=True, epsilon=0.7399967340475004, eta0=0.0001,
 
-            #SVC
-            #SVC(C=1.2453202919192343, coef0=1.9383630487762569, kernel='sigmoid')
+             #learning_rate='constant', loss='huber', n_iter_no_change=10, validation_fraction=0.3
+
+            #xgboost
+            #xgboost(learning_rate=0.478977150664321, max_delta_step=0, max_depth=5, min_child_weight=9, missing=nan, monotone_constraints='()', n_estimators=119, n_jobs=12, nthread=12, num_parallel_tree=1, random_state=22, reg_alpha=0, reg_lambda=1, scale_pos_weight=4, seed=22,
+            #subsample=0.5439148763175726, tree_method='exact, verbosity=None)

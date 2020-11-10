@@ -49,35 +49,69 @@ def get_data_filled(reference = 'a', target_to_drop ='exit' , year = '2014'):
     path = os.path.dirname(os.path.dirname(__file__))
 
     #After feature selection
-    if year =='2014':
-        features_a=['id',
-                    'category_code', 'country_code','state_code', 'founded_at','timediff_founded_series_a', 'time_diff_series_a_now', 'founder_count',
-                    'rounds_before_a' , 'raised_amount_usd_a','participants_a', 'mean_comp_worked_before',
-                    'graduate',  'MBA_bool', 'cs_bool', 'top_20_bool', 'female_ratio', 'exit', 'target']
+
+
+    if reference=='a':
+        if year =='2014':
+              features_a = ['id','category_code', 'country_code','state_code', 'founded_at','timediff_founded_series_a','time_diff_series_a_now',
+                                        'participants_a', 'raised_amount_usd_a', 'rounds_before_a', 'mean_comp_worked_before',
+                                        'founder_count', 'degree_count','graduate', 'undergrad','professional', 'MBA_bool',
+                                        'cs_bool', 'phd_bool', 'top_20_bool', 'mean_comp_founded_before', 'female_ratio','exit', 'target']
+
+        if year == '2009':
+
+            features_a = ['id','category_code', 'country_code','state_code', 'founded_at','timediff_founded_series_a',
+                                        'participants_a', 'raised_amount_usd_a', 'rounds_before_a', 'mean_comp_worked_before',
+                                        'founder_count', 'degree_count','graduate', 'undergrad','professional', 'MBA_bool',
+                                        'cs_bool', 'phd_bool', 'top_20_bool', 'mean_comp_founded_before', 'female_ratio','exit', 'target']
 
 
 
 
-    if year == '2009':
-        features_a=['id',
-                    'category_code', 'country_code','state_code', 'founded_at','timediff_founded_series_a',  'founder_count',
-                    'rounds_before_a' , 'raised_amount_usd_a','participants_a', 'mean_comp_worked_before',
-                    'graduate',  'MBA_bool', 'cs_bool', 'top_20_bool', 'female_ratio', 'exit', 'target']
+
+
+    if reference == 0:
+
+        if year =='2014':
+            features_a=['id','category_code', 'country_code','state_code', 'founded_at','timediff_founded_series_0','time_diff_series_0_now',
+                                        'participants_0', 'raised_amount_usd_0', 'mean_comp_worked_before',
+                                        'founder_count', 'degree_count','graduate', 'undergrad','professional', 'MBA_bool',
+                                        'cs_bool', 'phd_bool', 'top_20_bool', 'mean_comp_founded_before', 'female_ratio','exit', 'target']
+
+
 
 
 
     companies_total = get_training_data(reference=reference, cut=year)
     companies_total = clean_training_data(companies_total, reference=reference)
 
-    #df = pd.read_csv(os.path.join(path, 'raw_data' , 'last_complete_a.csv'), sep=';')
-    companies_total_filled_a = companies_total[features_a][companies_total[features_a].isnull().sum(axis = 1)<3].reset_index(drop=True)
-    #companies_total_filled_a['country_code'] = df['country_code']
-    #companies_total_filled_a['state_code'] = df['state_code']
 
-    companies_total_filled_a = companies_total_filled_a[companies_total_filled_a['category_code'].notna()]
+    if reference =='a':
+
+        #df = pd.read_csv(os.path.join(path, 'raw_data' , 'last_complete_a.csv'), sep=';')
+        companies_total_filled_a = companies_total[features_a][companies_total[features_a].isnull().sum(axis = 1)<3].reset_index(drop=True)
+        #companies_total_filled_a['country_code'] = df['country_code']
+        #companies_total_filled_a['state_code'] = df['state_code']
+
+        companies_total_filled_a = companies_total_filled_a[companies_total_filled_a['category_code'].notna()]
+
+        return companies_total_filled_a.set_index('id').drop(columns = [target_to_drop])
 
 
-    return companies_total_filled_a.set_index('id').drop(columns = [target_to_drop])
+    if reference ==0:
+
+        if year =='2014':
+
+            companies_use = companies_total[features_a]
+            companies_clean_country= companies_use[companies_use.country_code.notnull()]
+            companies_clean_state = companies_clean_country[companies_clean_country.state_code.notnull()]
+            companies_clean = companies_clean_state[companies_clean_state.category_code.notnull()]
+
+            return companies_clean.set_index('id').drop(columns = [target_to_drop])
+
+
+
+
 
 
 
