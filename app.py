@@ -162,8 +162,7 @@ def predict_exit(reference='a'):
 
 
 if __name__ == '__main__':
-    reference="a"
-    print(predict_exit())
-
+    #reference="a"
+    #print(predict_exit())
     #print(format_input(inputs))
-    #app.run(host='127.0.0.1', port=8080, debug=True)
+    app.run(host='127.0.0.1', port=8080, debug=True)
