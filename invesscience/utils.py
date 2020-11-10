@@ -73,3 +73,15 @@ def get_data_filled(reference = 'a', target_to_drop ='exit' ):
 
 
 
+if __name__ == "__main__":
+    companies = get_data_filled(reference="a")
+    print(companies.head(10))
+    print(companies.shape)
+    print(companies.columns)
+    print(companies.info())
+    print(companies.state_code.value_counts())
+    print(companies.country_code.value_counts())
+    companies.to_csv("companies_test.csv")
+
+
+
