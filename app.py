@@ -111,30 +111,7 @@ def predict_exit(reference='a'):
     :return: {"predictions": [1]}
 
     """
-    #inputs = request.get_json()
-    inputs =        {
-    "normalized_name":"Facebook",
-    "category_code": "social",
-    "founded_at": "2012-12-03 13:10:00",
-    "description": "lorem ipsum",
-    "country_code": "USA",
-    "state_code":  "CA",
-    f"participants_{reference}": 2,
-    f"raised_amount_usd_{reference}": 0,
-    f'rounds_before_a': 3,
-    "graduate": 1,
-    "undergrad": 1,
-    "professional": 3,
-    "MBA_bool" : 0,
-    "cs_bool": 1,
-    "phd_bool": 0,
-    "founder_count":4,
-    "top_20_bool": 1,
-    "female_ratio": 1,
-    "mean_comp_founded_before":1,
-    "mean_comp_worked_before": 2,
-    f"time_diff_series_{reference}_now" : 5
-    }
+    inputs = request.get_json()
     if isinstance(inputs, dict):
         inputs = [inputs]
     inputs = [format_input(point,reference=reference) for point in inputs]
