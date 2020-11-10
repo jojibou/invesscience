@@ -45,8 +45,6 @@ from imblearn.over_sampling import SMOTE
 from imblearn.pipeline import Pipeline as Pipeline_imb
 
 
-warnings.filterwarnings('ignore')
-
 
 MLFLOW_URI = "https://mlflow.lewagon.co/"
 
@@ -250,7 +248,6 @@ class Trainer(object):
         booleans_features = ['graduate',  'MBA_bool', 'cs_bool', 'top_20_bool', 'female_ratio'] # ordinals/binaries
 
 
-
         #Defining imputers
         imputer = self.get_imputer()
         imputer_2= SimpleImputer(strategy = 'most_frequent')
@@ -271,8 +268,6 @@ class Trainer(object):
                            ]
 
 
-
-
         #Columntransformer keeping order
         preprocessor = ColumnTransformer(feateng_blocks, remainder= 'passthrough')
 
@@ -283,12 +278,11 @@ class Trainer(object):
 
         if self.smote:
 
-            smote =SMOTE(sampling_strategy = 'auto', random_state= 42, k_neighbors= 20)
+            smote =SMOTE(sampling_strategy = 'minority', random_state= 42, k_neighbors= 20)
             self.pipeline =Pipeline_imb([
                 ('prep',preprocessor),
                 ('smote', smote),
                 ('model_use', self.get_estimator())])
-
 
 
         # Random search
@@ -301,7 +295,7 @@ class Trainer(object):
                     'model_use__kernel': ['sigmoid'],
                     'model_use__gamma': ['auto', 'scale'],
                     'model_use__coef0': uniform(0,2),
-                    'smote__sampling_strategy': uniform(0,1)
+                    'model_use__probability':[True]
 
                     },  #param depending of the model to use
                 cv=30,
@@ -316,7 +310,6 @@ class Trainer(object):
             self.grid_params = grid_search.get_params
 
             self.set_tag('model_used', self.pipeline)
-
 
 
 
@@ -442,13 +435,11 @@ if __name__ == "__main__":
     year= '2014'
 
 
-
-
     for i in range(1):
 
 
         for estimator_iter in [#'voting'
-                                #'SGDC',
+                               # 'SGDC',
                                 #'GradientBoostingClassifier',
                                 #'LogisticRegression'
                                 'SVC',
@@ -472,7 +463,8 @@ if __name__ == "__main__":
 
             df = get_data_filled(reference='a',target_to_drop ='exit' , year = year)
             #df= df[df.country_code=='USA']
-
+            print(df.info())
+            print(df.head())
 
             y_train = df["target"]
             X_train = df.drop(columns =['target']) #Change when we have categorical var
