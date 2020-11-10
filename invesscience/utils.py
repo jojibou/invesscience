@@ -69,10 +69,10 @@ def get_data_filled(reference = 'a', target_to_drop ='exit' , year = '2014'):
     companies_total = get_training_data(reference=reference, cut=year)
     companies_total = clean_training_data(companies_total, reference=reference)
 
-    df = pd.read_csv(os.path.join(path, 'raw_data' , 'last_complete_a.csv'), sep=';')
+    #df = pd.read_csv(os.path.join(path, 'raw_data' , 'last_complete_a.csv'), sep=';')
     companies_total_filled_a = companies_total[features_a][companies_total[features_a].isnull().sum(axis = 1)<3].reset_index(drop=True)
-    companies_total_filled_a['country_code'] = df['country_code']
-    companies_total_filled_a['state_code'] = df['state_code']
+    #companies_total_filled_a['country_code'] = df['country_code']
+    #companies_total_filled_a['state_code'] = df['state_code']
 
     companies_total_filled_a = companies_total_filled_a[companies_total_filled_a['category_code'].notna()]
 
