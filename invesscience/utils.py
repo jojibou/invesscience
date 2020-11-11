@@ -10,15 +10,20 @@ import pandas as pd
 from invesscience.joanna_clean_data_felipe import clean_training_data
 
 
-def compute_precision_cv(y_true, y_pred, labels=None, pos_label=1, average='binary', sample_weight=None, zero_division=1):
+def compute_precision_macro(y_pred, y_true):
 
-
-    return precision_score(y_true, y_pred, labels=None, pos_label=1, average='binary', sample_weight=None, zero_division=1)
+    return precision_score(y_true, y_pred, average='macro')
 
 def compute_precision(y_pred, y_true):
 
 
     return precision_score(y_true, y_pred)
+
+def compute_f1_macro(y_pred, y_true):
+
+
+    return precision_score(y_true, y_pred, average='macro')
+
 
 def compute_recall(y_pred, y_true):
 
@@ -88,15 +93,22 @@ def get_data_filled(reference = 'a', target_to_drop ='exit' , year = '2014'):
 
     if reference =='a':
 
-        #df = pd.read_csv(os.path.join(path, 'raw_data' , 'last_complete_a.csv'), sep=';')
+
         companies_total_filled_a = companies_total[features_a][companies_total[features_a].isnull().sum(axis = 1)<3].reset_index(drop=True)
-        #companies_total_filled_a['country_code'] = df['country_code']
-        #companies_total_filled_a['state_code'] = df['state_code']
+
 
         companies_total_filled_a = companies_total_filled_a[companies_total_filled_a['category_code'].notna()]
 
-        return companies_total_filled_a.set_index('id').drop(columns = [target_to_drop])
+        if target_to_drop=='exit':
 
+            return companies_total_filled_a.set_index('id').drop(columns = [target_to_drop])
+
+        if target_to_drop=='target':
+
+            data = companies_total_filled_a.set_index('id').drop(columns = [target_to_drop])
+            data['target'] = data.exit.map({'ipo':2, 'acquisition': 1 , 'no exit': 0})
+            data = data.drop(columns ='exit')
+            return data
 
     if reference ==0:
 
@@ -107,10 +119,18 @@ def get_data_filled(reference = 'a', target_to_drop ='exit' , year = '2014'):
             companies_clean_state = companies_clean_country[companies_clean_country.state_code.notnull()]
             companies_clean = companies_clean_state[companies_clean_state.category_code.notnull()]
 
+
+
+
+        if target_to_drop=='exit':
+
             return companies_clean.set_index('id').drop(columns = [target_to_drop])
 
-
-
+        if target_to_drop=='target':
+            data = companies_clean.set_index('id').drop(columns = [target_to_drop])
+            data['target'] = data.exit.map({'ipo':2, 'acquisition': 1 , 'no exit': 0})
+            data = data.drop(columns ='exit')
+            return data
 
 
 

@@ -21,7 +21,7 @@ from sklearn.pipeline import Pipeline, make_pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from termcolor import colored
 from xgboost import XGBRegressor
-from invesscience.utils import compute_f1, simple_time_tracker, compute_precision, compute_precision_cv, get_data_filled
+from invesscience.utils import compute_precision_macro, simple_time_tracker, compute_f1_macro, get_data_filled
 from invesscience.joanna_merge import get_training_data
 from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
@@ -137,8 +137,7 @@ class Trainer(object):
 
                                 ,voting='hard')
         elif estimator =='SGDC':
-            model = SGDClassifier(loss= 'epsilon_insensitive' ,alpha=0.25302306090332494, class_weight='balanced', early_stopping=True, epsilon=0.7399967340475004, eta0=0.0001,
-             learning_rate='constant', n_iter_no_change=10, validation_fraction=0.3)
+            model = SGDClassifier()
 
 
 
@@ -341,21 +340,21 @@ class Trainer(object):
                 self.pipeline,
                 param_distributions ={
 
-                    'model_use__loss' : ['huber', 'epsilon_insensitive', 'squared_epsilon_insensitive'],
-                    'model_use__penalty': ['l2'],
-                    'model_use__alpha': uniform(0,1),
-                    'model_use__epsilon': uniform(0.1),
-                    'model_use__learning_rate': ['constant', 'optimal', 'invscaling', 'adaptive'],
-                    'model_use__early_stopping':[True],
-                    'model_use__eta0':[0.0001],
-                    'model_use__validation_fraction':[0.3],
-                    'model_use__n_iter_no_change':[10],
-                    'model_use__class_weight': ['balanced']
+                    'model_use__learning_rate' : uniform(0,1),
+                    'model_use__n_estimators': randint(100,300),
+                    'model_use__max_depth': randint(5,10),
+                    'model_use__min_child_weight': randint(3,20),
+                    'model_use__gamma': uniform(0,1),
+                    'model_use__subsample': uniform(0,1),
+                    'model_use__colsample_bytree': uniform(0,1),
+                    'model_use__nthread': randint(4,20),
+                    'model_use__seed': randint(20, 40)
+
 
 
                     },  #param depending of the model to use
                 cv=40,
-                scoring='f1',
+                scoring='f1_macro',
                 n_iter = 100,
                 n_jobs = -1 )
 
@@ -404,7 +403,7 @@ class Trainer(object):
             res = pd.DataFrame(y_test)
             res["pred"] = y_pred
             print(colored(res.sample(self.y_val.shape[0]), "blue")) #Aumentar tamaño de muestra de validacion
-        f1 = compute_f1(y_pred, y_test)
+        f1 = compute_f1_macro(y_pred, y_test)
         return round(f1, 3)
 
 
@@ -416,7 +415,7 @@ class Trainer(object):
             res = pd.DataFrame(y_test)
             res["pred"] = y_pred
             print(colored(res.sample(self.y_val.shape[0]), "blue")) #Aumentar tamaño de muestra de validacion
-        precision = compute_precision(y_pred, y_test)
+        precision = compute_precision_macro(y_pred, y_test)
         return round(precision, 3)
 
 
@@ -488,19 +487,20 @@ if __name__ == "__main__":
 
 
     reference = 'a'
-    year= '2009'
+    year= '2014'
     target_to_drop = 'target'
 
 
     for i in range(1):
 
 
-        for estimator_iter in [#'voting'
+        for estimator_iter in ['xgboost'
+                                #'voting'
                                 #'SGDC'
                                 #'xgboost',
                                 #'GradientBoostingClassifier',
                                 #'LogisticRegression'
-                                'SVC',
+                                #'SVC',
                                  #'adaboost',
                                  #'DecisionTree'
                                  #'RandomForestClassifier'
@@ -509,10 +509,10 @@ if __name__ == "__main__":
     #ADABOOST : DecisionTree()
 
             params = dict(tag_description=f'[Multiclass][SVC-2009][{estimator_iter}][random_state][{year}][{reference}]', reference =reference, year = year ,estimator = estimator_iter,
-                estimator_params ={'class_weight': 'balanced'},
+                estimator_params ={},
                 local=False, split=True,  mlflow = True, experiment_name=experiment,
                 imputer= 'KNNImputer', imputer_params = {'n_neighbors':21, 'weights': 'distance'},
-                  grid_search_choice= False, smote=True) #agregar
+                  grid_search_choice= True, smote=True) #agregar
 
 #'learning_rate':0.478977150664321, 'max_depth':5, 'min_child_weight':9, 'n_estimators':119,'nthread':12, 'num_parallel_tree':1, 'random_state':22,  'scale_pos_weight':4, 'seed':22,'subsample':0.5439148763175726, 'tree_method':'exact'},
 
@@ -542,23 +542,3 @@ if __name__ == "__main__":
             t.evaluate()
             print(colored("############   Saving model    ############", "green"))
             t.save_model()
-
-
- ################------------Params founded ------#####################################################################
-
-            #High precision more variability
-
-            #Best DecisionTree
-            # DecisionTreeClassifier(class_weight='balanced', max_depth=3.853659650929652, max_features='log2',
-             #min_samples_split=0.2130615824774026, min_weight_fraction_leaf=0.40855752460926786
-
-             #Best SGDC ()
-             #SGDClassifier
-             #estimator_params ={'loss': 'epsilon_insensitive' ,'class_weight': 'balanced',alpha=0.25302306090332494,
-             #class_weight='balanced', early_stopping=True, epsilon=0.7399967340475004, eta0=0.0001,
-
-             #learning_rate='constant', loss='huber', n_iter_no_change=10, validation_fraction=0.3
-
-            #xgboost
-            #xgboost(learning_rate=0.478977150664321, max_delta_step=0, max_depth=5, min_child_weight=9, missing=nan, monotone_constraints='()', n_estimators=119, n_jobs=12, nthread=12, num_parallel_tree=1, random_state=22, reg_alpha=0, reg_lambda=1, scale_pos_weight=4, seed=22,
-            #subsample=0.5439148763175726, tree_method='exact, verbosity=None)
