@@ -11,7 +11,7 @@ clean_founded_before, clean_worked_before, clean_founder
 
 df = pd.read_csv('raw_data/support/companies_test.csv')
 
-st.markdown(f"# Invesscience \n # Invest in the most promising start-ups")
+st.markdown(f"# Invesscience ⚡️ \n # Invest in the most promising start-ups 🦄")
 
 def convert_bool(x):
     if x=="Yes":
@@ -20,18 +20,18 @@ def convert_bool(x):
         return 0
 
 def colors(x, cut):
-    if x < (2/3)*cut:
+    if x < (3/4)*cut:
         return "low"
     elif x > (5/4)*cut:
         return "high"
     else:
         return "average"
 
-def create_chart(column,title):
+def create_chart_cat(column,title):
     #pivot_table
     pivot_categories = pd.pivot_table(df, values='id', index=[column],
                 columns=['target'], aggfunc= "count", margins = True)
-    pivot_categories = pivot_categories.fillna(0).rename(columns={0:'no_exit', 1:'acquisition_or_ipo'})
+    pivot_categories = pivot_categories.fillna(0).rename(columns={0:'no_exit', 1:'acquisition_or_ipo'}).sort_values(by="All")
     #pivot_categories[0] = pivot_categories[0]/pivot_categories.All
     pivot_categories['acquisition_or_ipo'] = pivot_categories['acquisition_or_ipo']/pivot_categories.All
     cut = pivot_categories.loc["All","acquisition_or_ipo"]
@@ -47,24 +47,191 @@ def create_chart(column,title):
     ).properties(width=700, height=400)
     st.write(c)
 
+def create_chart_cat_neg(column,title):
+    #pivot_table
+    pivot_categories = pd.pivot_table(df, values='id', index=[column],
+                columns=['target'], aggfunc= "count", margins = True)
+    pivot_categories = pivot_categories.fillna(0).rename(columns={0:'no_exit', 1:'acquisition_or_ipo'}).sort_values(by="All")
+    #pivot_categories[0] = pivot_categories[0]/pivot_categories.All
+    pivot_categories['acquisition_or_ipo'] = pivot_categories['acquisition_or_ipo']/pivot_categories.All
+    cut = pivot_categories.loc["All","acquisition_or_ipo"]
+    pivot_categories["likelihood"] = pivot_categories["acquisition_or_ipo"].map(lambda x: colors(x,cut))
+    pivot_categories = pivot_categories[['acquisition_or_ipo',"likelihood"]]
+
+    c = alt.Chart(pivot_categories.reset_index()).mark_bar(
+    cornerRadiusTopLeft=3,
+    cornerRadiusTopRight=3).encode(
+    y=alt.Y("acquisition_or_ipo:Q", title="Chances of IPO or Acquisition [%]"),
+    x=alt.X(f"{column}:O", title=title),
+    color= alt.condition(alt.datum.likelihood=="average", alt.value("#4C78A8"), alt.value("#E45756"))
+    #"likelihood"
+    ).properties(width=630, height=400)
+    st.write(c)
+
+def create_chart_num(column,title):
+    #pivot_table
+    pivot_categories = pd.pivot_table(df, values='id', index=[column],
+                columns=['target'], aggfunc= "count", margins = True)
+    pivot_categories = pivot_categories.fillna(0).rename(columns={0:'no_exit', 1:'acquisition_or_ipo'})
+    #pivot_categories[0] = pivot_categories[0]/pivot_categories.All
+    pivot_categories['acquisition_or_ipo'] = pivot_categories['acquisition_or_ipo']/pivot_categories.All
+    cut = pivot_categories.loc["All","acquisition_or_ipo"]
+    #pivot_categories["likelihood"] = pivot_categories["acquisition_or_ipo"].map(lambda x: colors(x,cut))
+    pivot_categories = pivot_categories[['acquisition_or_ipo'
+    #,"likelihood"
+    ]]
+
+    c = alt.Chart(pivot_categories.reset_index()).mark_bar(
+    cornerRadiusTopLeft=3,
+    cornerRadiusTopRight=3).encode(
+    y=alt.Y("acquisition_or_ipo:Q", title="Chances of IPO or Acquisition [%]"),
+    x=alt.X(f"{column}:O", title=title),
+    #color= "likelihood"
+    ).properties(width=630, height=400)
+    st.write(c)
+
+def create_chart_cat_num(column,title):
+    #pivot_table
+    pivot_categories = pd.pivot_table(df, values='id', index=[column],
+                columns=['target'], aggfunc= "count", margins = True)
+    pivot_categories = pivot_categories.fillna(0).rename(columns={0:'no_exit', 1:'acquisition_or_ipo'})#.sort_values(by="All")
+    #pivot_categories[0] = pivot_categories[0]/pivot_categories.All
+    pivot_categories['acquisition_or_ipo'] = pivot_categories['acquisition_or_ipo']/pivot_categories.All
+    cut = pivot_categories.loc["All","acquisition_or_ipo"]
+    pivot_categories["likelihood"] = pivot_categories["acquisition_or_ipo"].map(lambda x: colors(x,cut))
+    pivot_categories = pivot_categories[['acquisition_or_ipo',"likelihood"]]
+
+    #oder
+    list_1 = [pivot_categories.index[-1],pivot_categories.index[-2]]
+    list_2 = list(pivot_categories.index[:-2])
+    list_1.extend(list_2)
+
+    c = alt.Chart(pivot_categories.reset_index()).mark_bar(
+    cornerRadiusTopLeft=3,
+    cornerRadiusTopRight=3).encode(
+    y=alt.Y("acquisition_or_ipo:Q", title="Chances of IPO or Acquisition [%]"),
+    x=alt.X(f"{column}:O", title=title, sort=list_1),
+    color= "likelihood"
+    ).properties(width=700, height=400)
+    st.write(c)
 
 
+def create_chart_bin_neg(column,title):
+    #pivot_table
+    pivot_categories = pd.pivot_table(df, values='id', index=[column],
+                columns=['target'], aggfunc= "count", margins = True)
+    pivot_categories = pivot_categories.fillna(0).rename(columns={0:'no_exit', 1:'acquisition_or_ipo'})
+    #pivot_categories[0] = pivot_categories[0]/pivot_categories.All
+    pivot_categories['acquisition_or_ipo'] = pivot_categories['acquisition_or_ipo']/pivot_categories.All
+    cut = pivot_categories.loc["All","acquisition_or_ipo"]
+    pivot_categories["likelihood"] = pivot_categories["acquisition_or_ipo"].map(lambda x: colors(x,cut))
+    pivot_categories = pivot_categories[['acquisition_or_ipo'
+    ,"likelihood"
+    ]]
+
+    c = alt.Chart(pivot_categories.drop("All").reset_index()).mark_bar(
+    cornerRadiusTopLeft=3,
+    cornerRadiusTopRight=3).encode(
+    y=alt.Y("acquisition_or_ipo:Q", title="Chances of IPO or Acquisition [%]"),
+    x=alt.X(f"{column}:O", title=title),
+    color= alt.condition(alt.datum.likelihood=="average", alt.value("#4C78A8"), alt.value("#E45756"))
+    #"likelihood"
+    ).properties(width=630, height=400)
+    st.write(c)
+
+def create_chart_bin_pos(column,title):
+    #pivot_table
+    pivot_categories = pd.pivot_table(df, values='id', index=[column],
+                columns=['target'], aggfunc= "count", margins = True)
+    pivot_categories = pivot_categories.fillna(0).rename(columns={0:'no_exit', 1:'acquisition_or_ipo'})
+    #pivot_categories[0] = pivot_categories[0]/pivot_categories.All
+    pivot_categories['acquisition_or_ipo'] = pivot_categories['acquisition_or_ipo']/pivot_categories.All
+    cut = pivot_categories.loc["All","acquisition_or_ipo"]
+    pivot_categories["likelihood"] = pivot_categories["acquisition_or_ipo"].map(lambda x: colors(x,cut))
+    pivot_categories = pivot_categories[['acquisition_or_ipo'
+    ,"likelihood"
+    ]]
+
+    c = alt.Chart(pivot_categories.drop("All").reset_index()).mark_bar(
+    cornerRadiusTopLeft=3,
+    cornerRadiusTopRight=3).encode(
+    y=alt.Y("acquisition_or_ipo:Q", title="Chances of IPO or Acquisition [%]"),
+    x=alt.X(f"{column}:O", title=title),
+    color= alt.condition(alt.datum.likelihood=="average", alt.value("#4C78A8"), alt.value("#F1853B"))
+    #"likelihood"
+    ).properties(width=630, height=400)
+    st.write(c)
 
 
 def main(reference="a"):
     analysis = st.sidebar.selectbox("choose activity", ["prediction", "data visualization"])
     if analysis == "data visualization":
-        st.header("Insights Data Analysis on Crunchbase Dataset")
+        st.header("Insights Data Analysis based on Crunchbase Dataset")
         #st.markdown("**Have fun immplementing your own Taxifare Dataviz**")
+        choice = st.selectbox("Insights", ["General","Location","Funding","Founding team composition", "Founding team education",
+            "Founding team experience"], index=0)
+        if choice == "General":
+            #Category
+            st.subheader("Exits according to category")
+            st.markdown("- **network_hosting, web and public relations** are more likely to have an exit")
+            st.markdown("- **medical and analytics** are less likely to have an exit")
+            #st.bar_chart(category_chart['acquisition_or_ipo'])
+            create_chart_cat('category_code',"Categories")
+            st.subheader("Exits according to founded year")
+            create_chart_cat_num("founded_at", "Founded Year")
+        if choice == "Location":
+            #Country
+            st.subheader("Exits according to Country")
+            create_chart_cat_neg('country_code',"Countries")
+            #State
+            st.subheader("Exits according to US State")
+            create_chart_cat('state_code',"States")
 
-        st.subheader("Exits according to category")
-        st.markdown("**network_hosting, web and public relations** are more likely to have an exit")
-        st.markdown("**medical and analytics** are less likely to have an exit")
-        #st.bar_chart(category_chart['acquisition_or_ipo'])
-        create_chart('category_code',"Categories")
+        if choice == "Founding team composition":
+            #Founders
+            st.subheader("Exits according to number of founders in the founding team")
+            create_chart_num('founder_count', "# Founders")
+            #Female ratio
+            st.subheader("Exits according to presence of women in the founding team")
+            create_chart_bin_neg('female_ratio', "Presence of women in founding team")
 
-        create_chart('state_code',"States")
-        create_chart('country_code',"Countries")
+        if choice == "Founding team education":
+            # top 20 school
+            st.subheader("Exits according to study at top 20 universities by founders (QS ranking 2018)")
+            create_chart_bin_pos('top_20_bool', "study at top 20 university in the founding team")
+            #CS ratio
+            st.subheader("Exits according to study of Computer Science by founders")
+            create_chart_bin_pos('cs_bool', "CS studies in the founding team")
+            #MBA bool
+            st.subheader("Exits according to MBA by founders")
+            create_chart_bin_pos('MBA_bool', "MBA in the founding team")
+            #Graduate bool
+            st.subheader("Exits according to graduate degree by founders")
+            create_chart_bin_pos('graduate', "Graduate degree in the founding team")
+
+        if choice == "Founding team experience":
+            # top 20 school
+            st.subheader("Exits according to work at previous companies")
+            create_chart_bin_pos('mean_comp_worked_before', "mean # company founders worked at before")
+            # top 20 school
+            st.subheader("Exits according to founding of previous company")
+            create_chart_bin_pos('mean_comp_founded_before', "company founded before by founders (Yes/No)")
+
+        if choice == "Funding":
+            # rounds before a
+            st.subheader("Exits according to number of funding rounds before Series A")
+            create_chart_num('rounds_before_a', "# rounds before Series A")
+            # participants at series a
+            st.subheader("Exits according to number of investors at Series A")
+            create_chart_num(f'participants_{reference}', "# investors at Series A")
+            # amount raised at series a
+            st.subheader("Exits according to amount raised at Series A")
+            create_chart_num(f'raised_amount_usd_{reference}', "Amount raised at series A")
+
+
+
+
+
 
 
 
@@ -262,7 +429,16 @@ def main(reference="a"):
         results = pipeline.predict_proba(X)
         print(results)
 
-        st.write(f"The probability for the company to exit within {time_diff_series_now} years is", round(results[0][1],2))
+        st.header('**Our Prediction**')
+
+        st.write(f"**The probability for this company to exit within {time_diff_series_now} years is**", round(results[0][1],2))
+        if results[0][1] >= 0.7:
+            st.write(f"You might have found the next 🦄")
+        if results[0][1] < 0.5:
+            st.write(f"We're not sure this is the right opportunity for you at the moment 👀")
+        if 0.5 <= results[0][1] < 0.7:
+            st.write(f"This opportunity has potential, you should further look into it ⭐️")
+
         # st.map(data=data)
 
 
