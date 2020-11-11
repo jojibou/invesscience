@@ -11,19 +11,17 @@ from mlflow.tracking import MlflowClient
 from psutil import virtual_memory
 from sklearn.compose import ColumnTransformer
 from sklearn.svm import SVC
-from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
+from sklearn.ensemble import GradientBoostingRegressor,RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline, make_pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from termcolor import colored
 from xgboost import XGBRegressor
-from invesscience.utils import compute_f1, simple_time_tracker, compute_precision, compute_precision_cv, get_data_filled
+from invesscience.utils import compute_f1, simple_time_tracker, compute_precision, get_data_filled
 from invesscience.joanna_merge import get_training_data
-from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import KNNImputer,SimpleImputer
 
@@ -39,10 +37,11 @@ from sklearn.linear_model import SGDClassifier
 from sklearn.preprocessing import OrdinalEncoder
 from sklearn.preprocessing import Binarizer
 from imblearn.pipeline import make_pipeline
-from imblearn.over_sampling import SMOTE
+from imblearn.over_sampling import SMOTE, ADASYN
 from imblearn.pipeline import Pipeline as Pipeline_imb
 from sklearn.inspection import permutation_importance
 from sklearn.naive_bayes import GaussianNB
+
 
 
 MLFLOW_URI = "https://mlflow.lewagon.co/"
@@ -114,7 +113,8 @@ class Trainer(object):
         elif estimator == "xgboost":
 
             model = XGBClassifier()
-
+#learning_rate=0.478977150664321, max_depth=5, min_child_weight=9,  n_estimators=119, nthread=12, num_parallel_tree=1, random_state=22, scale_pos_weight=4, seed=22,
+           # subsample=0.5439148763175726, tree_method='exact'
         elif estimator == "GaussianNB":
 
             model = GaussianNB()
@@ -137,8 +137,7 @@ class Trainer(object):
 
                                 ,voting='hard')
         elif estimator =='SGDC':
-            model = SGDClassifier(loss= 'epsilon_insensitive' ,alpha=0.25302306090332494, class_weight='balanced', early_stopping=True, epsilon=0.7399967340475004, eta0=0.0001,
-             learning_rate='constant', n_iter_no_change=10, validation_fraction=0.3)
+            model = SGDClassifier()
 
 
 
@@ -328,7 +327,7 @@ class Trainer(object):
 
         if self.smote:
 
-            smote =SMOTE(sampling_strategy = 'auto', random_state = 42, k_neighbors= 20)
+            smote =ADASYN(sampling_strategy = 'minority', n_neighbors= 20)
             self.pipeline =Pipeline_imb([
                 ('prep',preprocessor),
                 ('smote', smote),
@@ -341,10 +340,9 @@ class Trainer(object):
                 self.pipeline,
                 param_distributions ={
 
-                    'model_use__loss' : ['huber', 'epsilon_insensitive', 'squared_epsilon_insensitive'],
+                    'model_use__loss' : ['modified_huber', 'log'],
                     'model_use__penalty': ['l2'],
                     'model_use__alpha': uniform(0,1),
-                    'model_use__epsilon': uniform(0.1),
                     'model_use__learning_rate': ['constant', 'optimal', 'invscaling', 'adaptive'],
                     'model_use__early_stopping':[True],
                     'model_use__eta0':[0.0001],
@@ -489,18 +487,18 @@ if __name__ == "__main__":
 
     reference = 'a'
     year= '2009'
-    target_to_drop = 'target'
+    target_to_drop = 'exit'
 
 
     for i in range(1):
 
 
         for estimator_iter in [#'voting'
-                                #'SGDC'
-                                #'xgboost',
+                                'SGDC'
+                               #'xgboost',
                                 #'GradientBoostingClassifier',
                                 #'LogisticRegression'
-                                'SVC',
+                                #'SVC',
                                  #'adaboost',
                                  #'DecisionTree'
                                  #'RandomForestClassifier'
@@ -508,8 +506,8 @@ if __name__ == "__main__":
 
     #ADABOOST : DecisionTree()
 
-            params = dict(tag_description=f'[Multiclass][SVC-2009][{estimator_iter}][random_state][{year}][{reference}]', reference =reference, year = year ,estimator = estimator_iter,
-                estimator_params ={'class_weight': 'balanced'},
+            params = dict(tag_description=f'[{estimator_iter}][{year}][{reference}]', reference =reference, year = year ,estimator = estimator_iter,
+                estimator_params ={},
                 local=False, split=True,  mlflow = True, experiment_name=experiment,
                 imputer= 'KNNImputer', imputer_params = {'n_neighbors':21, 'weights': 'distance'},
                   grid_search_choice= False, smote=True) #agregar
@@ -522,6 +520,8 @@ if __name__ == "__main__":
 
             df = get_data_filled(reference=reference,target_to_drop =target_to_drop , year = year)
             #df= df[df.country_code=='USA']
+            print(df.shape)
+
 
 
 
@@ -562,3 +562,7 @@ if __name__ == "__main__":
             #xgboost
             #xgboost(learning_rate=0.478977150664321, max_delta_step=0, max_depth=5, min_child_weight=9, missing=nan, monotone_constraints='()', n_estimators=119, n_jobs=12, nthread=12, num_parallel_tree=1, random_state=22, reg_alpha=0, reg_lambda=1, scale_pos_weight=4, seed=22,
             #subsample=0.5439148763175726, tree_method='exact, verbosity=None)
+
+
+#learning_rate=0.478977150664321, max_depth=5, min_child_weight=9,  n_estimators=119, nthread=12, num_parallel_tree=1, random_state=22, scale_pos_weight=4, seed=22,
+ #           subsample=0.5439148763175726, tree_method='exact'

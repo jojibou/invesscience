@@ -134,10 +134,11 @@ class Trainer(object):
             model = VotingClassifier(estimators=[('sgdc', model_SGDC),
                                                 ('random', model_random),
                                                 ('svc', model_SVC)]
-
                                 ,voting='hard')
+
         elif estimator =='SGDC':
-            model = SGDClassifier()
+            model = SGDClassifier(alpha=0.04319786811839921, class_weight='balanced', early_stopping=True, eta0=0.0001,
+                                    loss='modified_huber', n_iter_no_change=10, validation_fraction=0.3)
 
 
 
@@ -343,7 +344,6 @@ class Trainer(object):
                     'model_use__loss' : ['modified_huber', 'log'],
                     'model_use__penalty': ['l2'],
                     'model_use__alpha': uniform(0,1),
-                    'model_use__epsilon': uniform(0.1),
                     'model_use__learning_rate': ['constant', 'optimal', 'invscaling', 'adaptive'],
                     'model_use__early_stopping':[True],
                     'model_use__eta0':[0.0001],
@@ -488,7 +488,7 @@ if __name__ == "__main__":
     #Change the reference HERE !!!
 
 
-    reference = 'a'
+    reference = 0
     year= '2014'
     target_to_drop = 'target'
 
@@ -498,11 +498,11 @@ if __name__ == "__main__":
 
         for estimator_iter in [#'xgboost'
                                 #'voting'
-                                'SGDC'
+                                #'SGDC'
                                 #'xgboost',
                                 #'GradientBoostingClassifier',
                                 #'LogisticRegression'
-                                #'SVC',
+                                'SVC',
                                  #'adaboost',
                                  #'DecisionTree'
                                  #'RandomForestClassifier'
@@ -510,12 +510,12 @@ if __name__ == "__main__":
 
     #ADABOOST : DecisionTree()
 
-            params = dict(tag_description=f'N[Multiclass][SVC-2009][{estimator_iter}][random_state][{year}][{reference}]', reference =reference, year = year ,estimator = estimator_iter,
+            params = dict(tag_description=f'[final][Multiclass][{estimator_iter}][{year}][{reference}]', reference =reference, year = year ,estimator = estimator_iter,
                 estimator_params ={},
                 local=False, split=True,  mlflow = True, experiment_name=experiment,
-                imputer= 'KNNImputer', imputer_params = {'n_neighbors':21, 'weights': 'distance'},
-                  grid_search_choice= True, smote=True) #agregar
-
+                imputer= 'SimpleImputer', imputer_params = {'strategy': 'most_frequent'},
+                  grid_search_choice= False, smote=True) #agregar
+#'n_neighbors':21, 'weights': 'distance'
 #'learning_rate':0.478977150664321, 'max_depth':5, 'min_child_weight':9, 'n_estimators':119,'nthread':12, 'num_parallel_tree':1, 'random_state':22,  'scale_pos_weight':4, 'seed':22,'subsample':0.5439148763175726, 'tree_method':'exact'},
 
 
