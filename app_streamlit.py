@@ -9,7 +9,7 @@ from invesscience.joanna_clean_data import clean_cat, clean_country, clean_state
 , clean_participants, clean_amount, clean_rounds, clean_study, clean_school, clean_female,\
 clean_founded_before, clean_worked_before, clean_founder, clean_degree_count
 
-df = pd.read_csv('raw_data/support/companies_test.csv')
+df = pd.read_csv('companies_test.csv')
 
 st.markdown(f"# Invesscience ⚡️ \n # Invest in the most promising start-ups 🦄")
 
