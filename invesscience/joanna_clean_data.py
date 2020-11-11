@@ -240,7 +240,7 @@ def clean_training_data(companies, reference="a"):
     companies["professional"] = companies.undergrad.map(clean_study).replace('NaT', np.nan)
 
     # degree count 4 categories 0 - 3
-    companies["degree_count"] = companies.degree_count.map(clean_study).replace('NaT', np.nan)
+    companies["degree_count"] = companies.degree_count.map(clean_degree_count).replace('NaT', np.nan)
 
     #companies founded before to bool
     companies["mean_comp_founded_before"] = companies["mean_comp_founded_before"].map(clean_founded_before).replace('NaT', np.nan)
