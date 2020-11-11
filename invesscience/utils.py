@@ -10,15 +10,20 @@ import pandas as pd
 from invesscience.joanna_clean_data_felipe import clean_training_data
 
 
-def compute_precision_cv(y_true, y_pred, labels=None, pos_label=1, average='binary', sample_weight=None, zero_division=1):
+def compute_precision_macro(y_pred, y_true):
 
-
-    return precision_score(y_true, y_pred, labels=None, pos_label=1, average='binary', sample_weight=None, zero_division=1)
+    return precision_score(y_true, y_pred, average='macro')
 
 def compute_precision(y_pred, y_true):
 
 
     return precision_score(y_true, y_pred)
+
+def compute_f1_macro(y_pred, y_true):
+
+
+    return precision_score(y_true, y_pred, average='macro')
+
 
 def compute_recall(y_pred, y_true):
 
@@ -43,32 +48,90 @@ def simple_time_tracker(method):
     return timed
 
 
-def get_data_filled(reference = 'a', target_to_drop ='exit' ):
+def get_data_filled(reference = 'a', target_to_drop ='exit' , year = '2014'):
 
     ''' just working for reference A for the moment '''
     path = os.path.dirname(os.path.dirname(__file__))
 
     #After feature selection
 
-    features_a=['id',
-                'category_code', 'country_code', 'state_code', 'founded_at', 'timediff_founded_series_a',
-                 'time_diff_series_a_now', 'participants_a', 'raised_amount_usd_a',
-                 'rounds_before_a', 'mean_comp_worked_before', 'founder_count', 'graduate', 'MBA_bool', 'cs_bool', 'top_20_bool', 'mean_comp_founded_before',
-                 'female_ratio',
-                 'exit','target']
 
-    companies_total = get_training_data(reference=reference, cut="2014")
+    if reference=='a':
+        if year =='2014':
+              features_a = ['id','category_code', 'country_code','state_code', 'founded_at','timediff_founded_series_a','time_diff_series_a_now',
+                                        'participants_a', 'raised_amount_usd_a', 'rounds_before_a', 'mean_comp_worked_before',
+                                        'founder_count', 'degree_count','graduate', 'undergrad','professional', 'MBA_bool',
+                                        'cs_bool', 'phd_bool', 'top_20_bool', 'mean_comp_founded_before', 'female_ratio','exit', 'target']
+
+        if year == '2009':
+
+            features_a = ['id','category_code', 'country_code','state_code', 'founded_at','timediff_founded_series_a',
+                                        'participants_a', 'raised_amount_usd_a', 'rounds_before_a', 'mean_comp_worked_before',
+                                        'founder_count', 'degree_count','graduate', 'undergrad','professional', 'MBA_bool',
+                                        'cs_bool', 'phd_bool', 'top_20_bool', 'mean_comp_founded_before', 'female_ratio','exit', 'target']
+
+
+
+
+
+
+    if reference == 0:
+
+        if year =='2014':
+            features_a=['id','category_code', 'country_code','state_code', 'founded_at','timediff_founded_series_0','time_diff_series_0_now',
+                                        'participants_0', 'raised_amount_usd_0', 'mean_comp_worked_before',
+                                        'founder_count', 'degree_count','graduate', 'undergrad','professional', 'MBA_bool',
+                                        'cs_bool', 'phd_bool', 'top_20_bool', 'mean_comp_founded_before', 'female_ratio','exit', 'target']
+
+
+
+
+
+    companies_total = get_training_data(reference=reference, cut=year)
     companies_total = clean_training_data(companies_total, reference=reference)
 
-    #df = pd.read_csv(os.path.join(path, 'raw_data' , 'last_complete_a.csv'), sep=';')
-    companies_total_filled_a = companies_total[features_a][companies_total[features_a].isnull().sum(axis = 1)<3].reset_index(drop=True)
-    #companies_total_filled_a['country_code'] = df['country_code']
-    #companies_total_filled_a['state_code'] = df['state_code']
 
-    companies_total_filled_a = companies_total_filled_a[companies_total_filled_a['category_code'].notna()]
+    if reference =='a':
 
 
-    return companies_total_filled_a.set_index('id').drop(columns = [target_to_drop])
+        companies_total_filled_a = companies_total[features_a].reset_index(drop=True) #[companies_total[features_a].isnull().sum(axis = 1)<3]
+
+
+        companies_total_filled_a = companies_total_filled_a[companies_total_filled_a['category_code'].notna()]
+
+        if target_to_drop=='exit':
+
+            return companies_total_filled_a.set_index('id').drop(columns = [target_to_drop])
+
+        if target_to_drop=='target':
+
+            data = companies_total_filled_a.set_index('id').drop(columns = [target_to_drop])
+            data['target'] = data.exit.map({'ipo':2, 'acquisition': 1 , 'no exit': 0})
+            data = data.drop(columns ='exit')
+            return data
+
+    if reference ==0:
+
+        if year =='2014':
+
+            companies_use = companies_total[features_a]
+            companies_clean_country= companies_use[companies_use.country_code.notnull()]
+            companies_clean_state = companies_clean_country[companies_clean_country.state_code.notnull()]
+            companies_clean = companies_clean_state[companies_clean_state.category_code.notnull()]
+
+
+
+
+        if target_to_drop=='exit':
+
+            return companies_clean.set_index('id').drop(columns = [target_to_drop])
+
+        if target_to_drop=='target':
+            data = companies_clean.set_index('id').drop(columns = [target_to_drop])
+            data['target'] = data.exit.map({'ipo':2, 'acquisition': 1 , 'no exit': 0})
+            data = data.drop(columns ='exit')
+            return data
+
 
 
 
