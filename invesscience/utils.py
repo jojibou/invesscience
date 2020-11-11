@@ -94,7 +94,7 @@ def get_data_filled(reference = 'a', target_to_drop ='exit' , year = '2014'):
     if reference =='a':
 
 
-        companies_total_filled_a = companies_total[features_a][companies_total[features_a].isnull().sum(axis = 1)<3].reset_index(drop=True)
+        companies_total_filled_a = companies_total[features_a].reset_index(drop=True) #[companies_total[features_a].isnull().sum(axis = 1)<3]
 
 
         companies_total_filled_a = companies_total_filled_a[companies_total_filled_a['category_code'].notna()]
