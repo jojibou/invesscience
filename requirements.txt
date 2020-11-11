@@ -28,3 +28,4 @@ gunicorn
 s3fs
 streamlit
 herepy==2.1.1
+imblearn
