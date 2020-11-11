@@ -285,7 +285,7 @@ class Trainer(object):
                 categorical_features_1 = ['category_code', 'country_code','state_code', 'founded_at','timediff_founded_series_0', 'time_diff_series_0_now' ] #first use imputer /after ohe
 
 
-            categorical_features_2 = ['participants_0' , 'raised_amount_usd_0','participants_0', 'mean_comp_worked_before','founder_count', 'degree_count'] # impute first, after ordinals
+            categorical_features_2 = ['participants_0' , 'raised_amount_usd_0', 'mean_comp_worked_before','founder_count', 'degree_count'] # impute first, after ordinals
 
             booleans_features = ['graduate', 'undergrad', 'professional',  'MBA_bool', 'cs_bool', 'phd_bool','top_20_bool', 'mean_comp_founded_before','female_ratio'] # ordinals/binaries
 
@@ -340,15 +340,17 @@ class Trainer(object):
                 self.pipeline,
                 param_distributions ={
 
-                    'model_use__learning_rate' : uniform(0,1),
-                    'model_use__n_estimators': randint(100,300),
-                    'model_use__max_depth': randint(5,10),
-                    'model_use__min_child_weight': randint(3,20),
-                    'model_use__gamma': uniform(0,1),
-                    'model_use__subsample': uniform(0,1),
-                    'model_use__colsample_bytree': uniform(0,1),
-                    'model_use__nthread': randint(4,20),
-                    'model_use__seed': randint(20, 40)
+                    'model_use__loss' : ['modified_huber', 'log'],
+                    'model_use__penalty': ['l2'],
+                    'model_use__alpha': uniform(0,1),
+                    'model_use__epsilon': uniform(0.1),
+                    'model_use__learning_rate': ['constant', 'optimal', 'invscaling', 'adaptive'],
+                    'model_use__early_stopping':[True],
+                    'model_use__eta0':[0.0001],
+                    'model_use__validation_fraction':[0.3],
+                    'model_use__n_iter_no_change':[10],
+                    'model_use__class_weight': ['balanced']
+
 
 
 
@@ -494,9 +496,9 @@ if __name__ == "__main__":
     for i in range(1):
 
 
-        for estimator_iter in ['xgboost'
+        for estimator_iter in [#'xgboost'
                                 #'voting'
-                                #'SGDC'
+                                'SGDC'
                                 #'xgboost',
                                 #'GradientBoostingClassifier',
                                 #'LogisticRegression'
@@ -512,7 +514,7 @@ if __name__ == "__main__":
                 estimator_params ={},
                 local=False, split=True,  mlflow = True, experiment_name=experiment,
                 imputer= 'KNNImputer', imputer_params = {'n_neighbors':21, 'weights': 'distance'},
-                  grid_search_choice= False, smote=True) #agregar
+                  grid_search_choice= True, smote=True) #agregar
 
 #'learning_rate':0.478977150664321, 'max_depth':5, 'min_child_weight':9, 'n_estimators':119,'nthread':12, 'num_parallel_tree':1, 'random_state':22,  'scale_pos_weight':4, 'seed':22,'subsample':0.5439148763175726, 'tree_method':'exact'},
 
