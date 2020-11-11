@@ -340,20 +340,20 @@ class Trainer(object):
                 self.pipeline,
                 param_distributions ={
 
-                "model_use__learning_rate": [0.1, 0.01, 0.001],
-               "model_use__gamma" : [0.01, 0.1, 0.3, 0.5, 1, 1.5, 2],
-               "model_use__max_depth": [2, 4, 7, 10],
-               "model_use__colsample_bytree": [0.3, 0.6, 0.8, 1.0],
-               "model_use__subsample": [0.2, 0.4, 0.5, 0.6, 0.7],
-               "model_use__reg_alpha": [0, 0.5, 1],
-               "model_use__reg_lambda": [1, 1.5, 2, 3, 4.5],
-               "model_use__min_child_weight": [1, 3, 5, 7],
-               "model_use__n_estimators": [100, 250, 500, 1000]
+                "model_use__learning_rate": uniform(0,1),
+               "model_use__gamma" : uniform(0,2),
+               "model_use__max_depth": randint(1,15),
+               "model_use__colsample_bytree": randint(0.1,1),
+               "model_use__subsample": [0.2, 0.4, 0.5],
+               "model_use__reg_alpha": uniform(0,1),
+               "model_use__reg_lambda": uniform(1,10),
+               "model_use__min_child_weight": randint(1,10),
+               "model_use__n_estimators": randint(1000,3000)
 
                     },  #param depending of the model to use
-                cv=40,
+                cv=35,
                 scoring='f1',
-                n_iter = 100,
+                n_iter = 10,
                 n_jobs = -1 )
 
 
@@ -478,7 +478,7 @@ if __name__ == "__main__":
     warnings.simplefilter(action='ignore', category=FutureWarning)
 
     # Get and clean data
-    experiment = "Invesscience_batch_#463"
+    experiment = "Invesscience_final_batch_#463"
 
 
     #Change the reference HERE !!!
@@ -506,11 +506,10 @@ if __name__ == "__main__":
     #ADABOOST : DecisionTree()
 
             params = dict(tag_description=f'[2.-SELECT {i}][{estimator_iter}][{year}][{reference}]', reference =reference, year = year ,estimator = estimator_iter,
-                estimator_params ={'tree_method' : "gpu_hist", 'predictor' : "gpu_predictor", 'verbosity' : 1,
-                           'eval_metric' : ["merror", "map", "auc"], 'objective' : "binary:logistic"},
+                estimator_params ={},
                 local=False, split=True,  mlflow = True, experiment_name=experiment,
                 imputer= 'SimpleImputer', imputer_params = {'strategy': 'most_frequent'},
-                  grid_search_choice= True, smote=True) #agregar
+                  grid_search_choice= False, smote=True) #agregar
 
 #'learning_rate':0.478977150664321, 'max_depth':5, 'min_child_weight':9, 'n_estimators':119,'nthread':12, 'num_parallel_tree':1, 'random_state':22,  'scale_pos_weight':4, 'seed':22,'subsample':0.5439148763175726, 'tree_method':'exact'},
 
