@@ -11,19 +11,17 @@ from mlflow.tracking import MlflowClient
 from psutil import virtual_memory
 from sklearn.compose import ColumnTransformer
 from sklearn.svm import SVC
-from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
+from sklearn.ensemble import GradientBoostingRegressor,RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline, make_pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from termcolor import colored
 from xgboost import XGBRegressor
-from invesscience.utils import compute_f1, simple_time_tracker, compute_precision, compute_precision_cv, get_data_filled
+from invesscience.utils import compute_f1, simple_time_tracker, compute_precision, get_data_filled
 from invesscience.joanna_merge import get_training_data
-from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import KNNImputer,SimpleImputer
 
@@ -39,10 +37,11 @@ from sklearn.linear_model import SGDClassifier
 from sklearn.preprocessing import OrdinalEncoder
 from sklearn.preprocessing import Binarizer
 from imblearn.pipeline import make_pipeline
-from imblearn.over_sampling import SMOTE
+from imblearn.over_sampling import SMOTE, ADASYN
 from imblearn.pipeline import Pipeline as Pipeline_imb
 from sklearn.inspection import permutation_importance
 from sklearn.naive_bayes import GaussianNB
+
 
 
 MLFLOW_URI = "https://mlflow.lewagon.co/"
@@ -99,14 +98,16 @@ class Trainer(object):
         if estimator == "LogisticRegression":
             model = LogisticRegression(class_weight= 'balanced')
         elif estimator == "SVC":
-            model = SVC()
+            model = SVC(class_weight='balanced')
         elif estimator == "KNeighborsClassifier":
             model = KNeighborsClassifier()
         elif estimator == "DecisionTree":
             model = DecisionTreeClassifier(class_weight ='balanced')
 
         elif estimator == "RandomForestClassifier":
-            model = RandomForestClassifier()
+            model = RandomForestClassifier(bootstrap=True, ccp_alpha=4.795609695177735,
+                                                     criterion='entropy', max_depth=4,
+                                            max_features='sqrt', max_samples=0.21073053471890313, n_estimators=254)
             self.model_params = {  # 'n_estimators': [int(x) for x in np.linspace(start = 50, stop = 200, num = 10)],
                 'max_features': ['auto']}
             # 'max_depth' : [int(x) for x in np.linspace(10, 110, num = 11)]}
@@ -123,23 +124,44 @@ class Trainer(object):
             model = AdaBoostClassifier()
 
         elif estimator =='voting':
-            model_SGDC = SGDClassifier()
 
-            model_SVC = SVC(C=1.2453202919192343, coef0=1.9383630487762569, kernel='sigmoid', probability =True)
+            model_1 = SGDClassifier(alpha=0.30172076992185237, class_weight='balanced', early_stopping=True,
+                        eta0=0.0001, learning_rate='constant', loss='log', n_iter_no_change=10, validation_fraction=0.3)
+            model_2 = SGDClassifier(alpha=0.5471642701893039, class_weight='balanced', early_stopping=True,
+                         eta0=0.0001, loss='modified_huber', n_iter_no_change=10, validation_fraction=0.3)
 
-            model_random = RandomForestClassifier(bootstrap=False, ccp_alpha=4.795609695177735,
-                                                     criterion='entropy', max_depth=4,
-                                            max_features='sqrt', max_samples=0.21073053471890313, n_estimators=254)
+            model_3 = SGDClassifier(alpha=0.3566042451846202, class_weight='balanced', early_stopping=True,
+                                     eta0=0.0001, loss='modified_huber', n_iter_no_change=10, validation_fraction=0.3)
 
-            model = VotingClassifier(estimators=[('sgdc', model_SGDC),
-                                                ('random', model_random),
-                                                ('svc', model_SVC)]
+            model_4 = SGDClassifier(alpha=0.14886018175436921, class_weight='balanced', early_stopping=True,
+                                eta0=0.0001, loss='modified_huber', n_iter_no_change=10, validation_fraction=0.3)
+            model_5 = SVC(C=7.661584366688032, class_weight='balanced', degree=1, gamma=2.8796293228415792, kernel='poly', probability =True)
+            model_6 = SVC(C=6.359827845516727, class_weight='balanced', gamma=4.6924698110083485, kernel='linear', probability =True)
 
-                                ,voting='hard')
+
+
+            model = VotingClassifier(estimators=[('model1a', model_1),
+                                                ('model2a', model_2),
+                                                ('model4a', model_4),
+                                                ('model5a', model_5),
+                                                ('model6a', model_6)]
+                                ,voting='soft')
+
+
+
+
+#[3, 1, 3, 2, 3]
+#[6, 2, 5, 3, 4]
+#[7, 4, 5, 3, 5]
+
+
         elif estimator =='SGDC':
-            model = SGDClassifier(loss= 'epsilon_insensitive' ,alpha=0.25302306090332494, class_weight='balanced', early_stopping=True, epsilon=0.7399967340475004, eta0=0.0001,
-             learning_rate='constant', n_iter_no_change=10, validation_fraction=0.3)
+            model = SGDClassifier(class_weight ='balanced')
 
+#[1,2,3,4,5,6] --> 0,454
+#[5,6,2,1,6,4] --> 0,361
+#[8,7,6,5,4,3]
+#[6,5,7,4,8,3]
 
 
         #else:
@@ -328,7 +350,7 @@ class Trainer(object):
 
         if self.smote:
 
-            smote =SMOTE(sampling_strategy = 'auto', random_state = 42, k_neighbors= 20)
+            smote =ADASYN(sampling_strategy = 'minority', n_neighbors= 20)
             self.pipeline =Pipeline_imb([
                 ('prep',preprocessor),
                 ('smote', smote),
@@ -341,22 +363,20 @@ class Trainer(object):
                 self.pipeline,
                 param_distributions ={
 
-                    'model_use__loss' : ['huber', 'epsilon_insensitive', 'squared_epsilon_insensitive'],
-                    'model_use__penalty': ['l2'],
-                    'model_use__alpha': uniform(0,1),
-                    'model_use__epsilon': uniform(0.1),
-                    'model_use__learning_rate': ['constant', 'optimal', 'invscaling', 'adaptive'],
-                    'model_use__early_stopping':[True],
-                    'model_use__eta0':[0.0001],
-                    'model_use__validation_fraction':[0.3],
-                    'model_use__n_iter_no_change':[10],
-                    'model_use__class_weight': ['balanced']
-
+                "model_use__learning_rate": uniform(0,1),
+               "model_use__gamma" : uniform(0,2),
+               "model_use__max_depth": randint(1,15),
+               "model_use__colsample_bytree": randint(0.1,1),
+               "model_use__subsample": [0.2, 0.4, 0.5],
+               "model_use__reg_alpha": uniform(0,1),
+               "model_use__reg_lambda": uniform(1,10),
+               "model_use__min_child_weight": randint(1,10),
+               "model_use__n_estimators": randint(1000,3000)
 
                     },  #param depending of the model to use
-                cv=40,
+                cv=35,
                 scoring='f1',
-                n_iter = 100,
+                n_iter = 10,
                 n_jobs = -1 )
 
 
@@ -422,8 +442,8 @@ class Trainer(object):
 
     def save_model(self):
         """Save the model into a .joblib format"""
-        joblib.dump(self.pipeline, 'monday_model.joblib')
-        print(colored("model.joblib saved locally", "green"))
+        joblib.dump(self.pipeline, 'Final_model.joblib')
+        print(colored("final.joblib saved locally", "green"))
 
     ### MLFlow methods
     @memoized_property
@@ -489,51 +509,54 @@ if __name__ == "__main__":
 
     reference = 'a'
     year= '2009'
-    target_to_drop = 'target'
+    target_to_drop = 'exit'
+
+    df = get_data_filled(reference=reference,target_to_drop =target_to_drop , year = year)
+    y_train = df["target"]
+    X_train = df.drop(columns =['target']) #Change when we have categorical var
+
+
 
 
     for i in range(1):
-
-
-        for estimator_iter in [#'voting'
-                                #'SGDC'
-                                #'xgboost',
+        for estimator_iter in ['voting'
+                              #  'SGDC'
+                               #'xgboost',
                                 #'GradientBoostingClassifier',
                                 #'LogisticRegression'
-                                'SVC',
+                                #'SVC',
                                  #'adaboost',
                                  #'DecisionTree'
-                                 #'RandomForestClassifier'
+                                # 'RandomForestClassifier'
                                  ]:
 
     #ADABOOST : DecisionTree()
 
-            params = dict(tag_description=f'[Multiclass][SVC-2009][{estimator_iter}][random_state][{year}][{reference}]', reference =reference, year = year ,estimator = estimator_iter,
-                estimator_params ={'class_weight': 'balanced'},
+            params = dict(tag_description=f'[MODEL FINAL]{estimator_iter}][{year}][{reference}]', reference =reference, year = year ,estimator = estimator_iter,
+                estimator_params ={ 'weights' :[6, 2, 5, 3, 4]},
                 local=False, split=True,  mlflow = True, experiment_name=experiment,
-                imputer= 'KNNImputer', imputer_params = {'n_neighbors':21, 'weights': 'distance'},
+                imputer= 'SimpleImputer', imputer_params = {'strategy': 'most_frequent'},
                   grid_search_choice= False, smote=True) #agregar
 
-#'learning_rate':0.478977150664321, 'max_depth':5, 'min_child_weight':9, 'n_estimators':119,'nthread':12, 'num_parallel_tree':1, 'random_state':22,  'scale_pos_weight':4, 'seed':22,'subsample':0.5439148763175726, 'tree_method':'exact'},
 
-
+    #'n_neighbors':21, 'weights': 'distance'
 
             print("############   Loading Data   ############")
 
-            df = get_data_filled(reference=reference,target_to_drop =target_to_drop , year = year)
+
             #df= df[df.country_code=='USA']
 
 
 
-
-            y_train = df["target"]
-            X_train = df.drop(columns =['target']) #Change when we have categorical var
-            del df
+#[3, 1, 3, 2, 3]
+#[6, 2, 5, 3, 4]
+#[7, 4, 5, 3, 5]
+            #del df
             print("shape: {}".format(X_train.shape))
             print("size: {} Mb".format(X_train.memory_usage().sum() / 1e6))
             # Train and save model, locally and
             t = Trainer(X=X_train, y=y_train, **params)
-            del X_train, y_train
+            #del X_train, y_train
 
 
             print(colored("############  Training model   ############", "red"))
@@ -562,3 +585,7 @@ if __name__ == "__main__":
             #xgboost
             #xgboost(learning_rate=0.478977150664321, max_delta_step=0, max_depth=5, min_child_weight=9, missing=nan, monotone_constraints='()', n_estimators=119, n_jobs=12, nthread=12, num_parallel_tree=1, random_state=22, reg_alpha=0, reg_lambda=1, scale_pos_weight=4, seed=22,
             #subsample=0.5439148763175726, tree_method='exact, verbosity=None)
+
+
+#learning_rate=0.478977150664321, max_depth=5, min_child_weight=9,  n_estimators=119, nthread=12, num_parallel_tree=1, random_state=22, scale_pos_weight=4, seed=22,
+ #           subsample=0.5439148763175726, tree_method='exact'
