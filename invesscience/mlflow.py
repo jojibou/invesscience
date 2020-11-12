@@ -41,7 +41,7 @@ from imblearn.over_sampling import SMOTE, ADASYN
 from imblearn.pipeline import Pipeline as Pipeline_imb
 from sklearn.inspection import permutation_importance
 from sklearn.naive_bayes import GaussianNB
-
+from sklearn.metrics import classification_report
 
 
 MLFLOW_URI = "https://mlflow.lewagon.co/"
@@ -75,6 +75,7 @@ class Trainer(object):
         self.estimator_xgb = self.kwargs.get("estimator", self.ESTIMATOR)
         self.local = kwargs.get("local", False)  # if True training is done locally
         self.year = kwargs.get("year", '2014')
+        self.makecsv = kwargs.get("csv", False)
         self.smote = kwargs.get("smote", False)
         self.mlflow = kwargs.get("mlflow", False)
         self.reference = kwargs.get("reference", 'a')
@@ -127,24 +128,23 @@ class Trainer(object):
 
             model_1 = SGDClassifier(alpha=0.30172076992185237, class_weight='balanced', early_stopping=True,
                         eta0=0.0001, learning_rate='constant', loss='log', n_iter_no_change=10, validation_fraction=0.3)
+
             model_2 = SGDClassifier(alpha=0.5471642701893039, class_weight='balanced', early_stopping=True,
                          eta0=0.0001, loss='modified_huber', n_iter_no_change=10, validation_fraction=0.3)
 
-            model_3 = SGDClassifier(alpha=0.3566042451846202, class_weight='balanced', early_stopping=True,
-                                     eta0=0.0001, loss='modified_huber', n_iter_no_change=10, validation_fraction=0.3)
-
-            model_4 = SGDClassifier(alpha=0.14886018175436921, class_weight='balanced', early_stopping=True,
+            model_3 = SGDClassifier(alpha=0.14886018175436921, class_weight='balanced', early_stopping=True,
                                 eta0=0.0001, loss='modified_huber', n_iter_no_change=10, validation_fraction=0.3)
-            model_5 = SVC(C=7.661584366688032, class_weight='balanced', degree=1, gamma=2.8796293228415792, kernel='poly', probability =True)
-            model_6 = SVC(C=6.359827845516727, class_weight='balanced', gamma=4.6924698110083485, kernel='linear', probability =True)
+
+            model_4 = SVC(C=7.661584366688032, class_weight='balanced', degree=1, gamma=2.8796293228415792, kernel='poly', probability =True)
+            model_5 = SVC(C=6.359827845516727, class_weight='balanced', gamma=4.6924698110083485, kernel='linear', probability =True)
 
 
 
             model = VotingClassifier(estimators=[('model1a', model_1),
                                                 ('model2a', model_2),
-                                                ('model4a', model_4),
-                                                ('model5a', model_5),
-                                                ('model6a', model_6)]
+                                                ('model4a', model_3),
+                                                ('model5a', model_4),
+                                                ('model6a', model_5)]
                                 ,voting='soft')
 
 
@@ -400,6 +400,20 @@ class Trainer(object):
         self.mlflow_log_metric("train_time", int(time.time() - tic))
         self.set_tag('tag_instance', self.tag)
 
+#GENERATING CSV CLASS REPORT
+        if self.makecsv:
+            y_pred = self.pipeline.predict(self.X_val)
+            report = classification_report(self.y_val, y_pred, output_dict=True)
+            df = pd.DataFrame(report).transpose()
+            df.to_csv('C:\\Users\\Felipe\\Desktop\\class_report_test.csv')
+            # get class report for train
+            y_pred_train = self.pipeline.predict(self.X_train)
+            report = classification_report(self.y_train, y_pred_train, output_dict=True)
+            df = pd.DataFrame(report).transpose()
+            df.to_csv('C:\\Users\\Felipe\\Desktop\\class_report_train.csv')
+
+
+
     def evaluate(self):
         f1_train = self.compute_f1(self.X_train, self.y_train)
         precision_train = self.compute_precision(self.X_train, self.y_train)
@@ -538,7 +552,7 @@ if __name__ == "__main__":
                 estimator_params ={ 'weights' :[6, 2, 5, 3, 4]},
                 local=False, split=True,  mlflow = True, experiment_name=experiment,
                 imputer= 'SimpleImputer', imputer_params = {'strategy': 'most_frequent'},
-                  grid_search_choice= False, smote=True) #agregar
+                  grid_search_choice= False, smote=True, csv = False) #agregar
 
 
     #'n_neighbors':21, 'weights': 'distance'

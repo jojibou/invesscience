@@ -368,6 +368,17 @@ class Trainer(object):
 
             self.set_tag('model_used', self.pipeline)
 
+                        # get class report for test
+            y_pred = self.pipeline.predict(self.X_val)
+            report = classification_report(self.y_val, y_pred, output_dict=True)
+            df = pd.DataFrame(report).transpose()
+            df.to_csv('C:\\Users\\Felipe\\Desktop\\class_report_test.csv')
+            # get class report for train
+            y_pred_train = self.pipeline.predict(self.X_train)
+            report = classification_report(self.y_train, y_pred_train, output_dict=True)
+            df = pd.DataFrame(report).transpose()
+            df.to_csv('C:\\Users\\Felipe\\Desktop\\class_report_train.csv')
+
 
 
     @simple_time_tracker
@@ -378,6 +389,7 @@ class Trainer(object):
         # mlflow logs
         self.mlflow_log_metric("train_time", int(time.time() - tic))
         self.set_tag('tag_instance', self.tag)
+
 
     def evaluate(self):
         f1_train = self.compute_f1(self.X_train, self.y_train)
@@ -391,6 +403,7 @@ class Trainer(object):
             precision_val = self.compute_precision(self.X_val, self.y_val, show=True)
             self.mlflow_log_metric("f1score_val", f1_val)
             self.mlflow_log_metric("precision_val", precision_val)
+
             print(colored("f1 train: {} || f1 val: {}".format(f1_train, f1_val), "yellow"))
             print(colored("precision train: {} || precision val: {}".format(precision_train, precision_val), "yellow"))
         else:
