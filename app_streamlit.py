@@ -9,7 +9,7 @@ from invesscience.joanna_clean_data import clean_cat, clean_country, clean_state
 , clean_participants, clean_amount, clean_rounds, clean_study, clean_school, clean_female,\
 clean_founded_before, clean_worked_before, clean_founder, clean_degree_count
 
-df = pd.read_csv('companies_test.csv')
+df = pd.read_csv('companies_test_3.csv')
 
 st.markdown(f"# Invesscience ⚡️ \n # Invest in the most promising start-ups 🦄")
 
@@ -106,10 +106,10 @@ def create_chart_cat_num(column,title):
 
     #oder
     list_1 = [pivot_categories.index[-1],pivot_categories.index[-2]]
-    list_2 = list(pivot_categories.index[:-2])
+    list_2 = list(pivot_categories.index[:-5])
     list_1.extend(list_2)
 
-    c = alt.Chart(pivot_categories.reset_index()).mark_bar(
+    c = alt.Chart(pivot_categories.drop(["2009","2010","2011","2012","2013"]).reset_index()).mark_bar(
     cornerRadiusTopLeft=3,
     cornerRadiusTopRight=3).encode(
     y=alt.Y("acquisition_or_ipo:Q", title="Chances of IPO or Acquisition [%]"),
@@ -464,12 +464,13 @@ def main(reference="a"):
 
         st.header('**Our Prediction**')
 
-        st.write(f"**The probability for this company to exit within {time_diff_series_now} years is**", round(results[0][1],2))
-        if results[0][1] >= 0.7:
+        st.write(f"**The probability for this company to exit within {time_diff_series_now} years is**", int(round(results[0][1]*100)), "%")
+        st.write(f"<h1 style='text-align: center; color: red;'> {int(round(results[0][1]*100))} Some title</h1>", unsafe_allow_html=True)
+        if results[0][1] >= 0.8:
             st.write(f"You might have found the next 🦄")
         if results[0][1] < 0.5:
             st.write(f"We're not sure this is the right opportunity for you at the moment 👀")
-        if 0.5 <= results[0][1] < 0.7:
+        if 0.5 <= results[0][1] < 0.8:
             st.write(f"This opportunity has potential, you should further look into it ⭐️")
 
         # st.map(data=data)

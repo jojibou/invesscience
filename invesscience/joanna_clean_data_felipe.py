@@ -263,7 +263,7 @@ def clean_training_data(companies, reference="a"):
 
 
 if __name__ == "__main__":
-    companies = get_training_data(reference="a",cut="2014")
+    companies = get_training_data(reference="a",cut="2009")
     print(companies.head(10))
     print(companies.shape)
     print(companies.columns)
@@ -274,6 +274,7 @@ if __name__ == "__main__":
     print(companies.info())
     print(companies.state_code.value_counts())
     print(companies.country_code.value_counts())
+    companies.to_csv("companies_test_5.csv")
 
 
 
