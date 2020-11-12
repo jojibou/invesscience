@@ -263,10 +263,10 @@ class Trainer(object):
         if self.reference=='a':
 
             if self.year == '2009':
-                categorical_features_1 = ['category_code', 'country_code','state_code', 'founded_at','timediff_founded_series_a']
+                categorical_features_1 = ['category_code', 'country_code','state_code', 'founded_at','timediff_founded_series_a','time_diff_series_a_now']
 
             elif self.year == '2014':
-                categorical_features_1 = ['category_code', 'country_code','state_code', 'founded_at','timediff_founded_series_a', 'time_diff_series_a_now'] #first use imputer /after ohe
+                categorical_features_1 = ['category_code', 'country_code','state_code', 'founded_at','timediff_founded_series_a'] #first use imputer /after ohe
 
 
             categorical_features_2 = ['participants_a', 'raised_amount_usd_a', 'rounds_before_a', 'mean_comp_worked_before',  'founder_count', 'degree_count'] # impute first, after ordinals
@@ -532,7 +532,7 @@ if __name__ == "__main__":
 
     #ADABOOST : DecisionTree()
 
-            params = dict(tag_description=f'[MODEL FINAL]{estimator_iter}][{year}][{reference}]', reference =reference, year = year ,estimator = estimator_iter,
+            params = dict(tag_description=f'[2.add feature ]{estimator_iter}][{year}][{reference}]', reference =reference, year = year ,estimator = estimator_iter,
                 estimator_params ={ 'weights' :[6, 2, 5, 3, 4]},
                 local=False, split=True,  mlflow = True, experiment_name=experiment,
                 imputer= 'SimpleImputer', imputer_params = {'strategy': 'most_frequent'},
