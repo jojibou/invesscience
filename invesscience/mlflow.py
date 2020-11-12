@@ -131,6 +131,9 @@ class Trainer(object):
             model_2 = SGDClassifier(alpha=0.5471642701893039, class_weight='balanced', early_stopping=True,
                          eta0=0.0001, loss='modified_huber', n_iter_no_change=10, validation_fraction=0.3)
 
+            model_3 = SGDClassifier(alpha=0.3566042451846202, class_weight='balanced', early_stopping=True,
+                                     eta0=0.0001, loss='modified_huber', n_iter_no_change=10, validation_fraction=0.3)
+
             model_4 = SGDClassifier(alpha=0.14886018175436921, class_weight='balanced', early_stopping=True,
                                 eta0=0.0001, loss='modified_huber', n_iter_no_change=10, validation_fraction=0.3)
             model_5 = SVC(C=7.661584366688032, class_weight='balanced', degree=1, gamma=2.8796293228415792, kernel='poly', probability =True)
@@ -140,6 +143,7 @@ class Trainer(object):
 
             model = VotingClassifier(estimators=[('model1', model_1),
                                                 ('model2', model_2),
+                                                ('model3', model_3),
                                                 ('model4', model_4),
                                                 ('model5', model_5),
                                                 ('model6', model_6)]
@@ -511,7 +515,7 @@ if __name__ == "__main__":
             for k in range(1,7):
                 for m in range(1,7):
                     for n in range(1,7):
-
+                        for p in range(1,7):
 
                             for estimator_iter in ['voting'
                                                   #  'SGDC'
@@ -526,8 +530,8 @@ if __name__ == "__main__":
 
                         #ADABOOST : DecisionTree()
 
-                                params = dict(tag_description=f'r[Weights][{estimator_iter}][{year}][{reference}]', reference =reference, year = year ,estimator = estimator_iter,
-                                    estimator_params ={'weights' : [i,j,k,m,n] },
+                                params = dict(tag_description=f'[iteration_final][Weights][{estimator_iter}][{year}][{reference}]', reference =reference, year = year ,estimator = estimator_iter,
+                                    estimator_params ={'weights' : [i,j,k,m,n,p] },
                                     local=False, split=True,  mlflow = True, experiment_name=experiment,
                                     imputer= 'SimpleImputer', imputer_params = {'strategy': 'most_frequent'},
                                       grid_search_choice= False, smote=True) #agregar
@@ -544,12 +548,12 @@ if __name__ == "__main__":
 
 
 
-                                del df
+                                #del df
                                 print("shape: {}".format(X_train.shape))
                                 print("size: {} Mb".format(X_train.memory_usage().sum() / 1e6))
                                 # Train and save model, locally and
                                 t = Trainer(X=X_train, y=y_train, **params)
-                                del X_train, y_train
+                                #del X_train, y_train
 
 
                                 print(colored("############  Training model   ############", "red"))
