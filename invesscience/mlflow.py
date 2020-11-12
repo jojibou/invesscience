@@ -263,7 +263,9 @@ class Trainer(object):
         if self.reference=='a':
 
             if self.year == '2009':
+
                 categorical_features_1 = ['category_code', 'country_code','state_code', 'founded_at','timediff_founded_series_a','time_diff_series_a_now']
+
 
             elif self.year == '2014':
                 categorical_features_1 = ['category_code', 'country_code','state_code', 'founded_at','timediff_founded_series_a'] #first use imputer /after ohe

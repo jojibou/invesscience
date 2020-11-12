@@ -9,10 +9,9 @@ yapf
 python-gitlab
 twine
 pandas
-
-
+psutil==5.7.0
+pytz
 scikit-learn==0.23.2
-google-cloud-storage==1.26.0
 mlflow==1.8.0
 joblib==0.14.1
 numpy==1.18.4
@@ -28,3 +27,5 @@ flask-cors
 gunicorn
 s3fs
 streamlit
+herepy==2.1.1
+imblearn

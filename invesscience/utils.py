@@ -94,6 +94,7 @@ def get_data_filled(reference = 'a', target_to_drop ='exit' , year = '2014'):
     if reference =='a':
 
 
+
         companies_total_filled_a = companies_total[features_a][companies_total[features_a].isnull().sum(axis = 1)<3].reset_index(drop=True) #
 
 
@@ -137,7 +138,8 @@ def get_data_filled(reference = 'a', target_to_drop ='exit' , year = '2014'):
 
 
 if __name__ == "__main__":
-    companies = get_data_filled(reference="a")
+    print("2009")
+    companies = get_data_filled(reference="a", year="2009")
     print(companies.head(10))
     print(companies.shape)
     print(companies.columns)
