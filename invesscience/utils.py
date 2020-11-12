@@ -65,7 +65,7 @@ def get_data_filled(reference = 'a', target_to_drop ='exit' , year = '2014'):
 
         if year == '2009':
 
-            features_a = ['id','category_code', 'country_code','state_code', 'founded_at','timediff_founded_series_a',
+            features_a = ['id','category_code', 'country_code','state_code', 'founded_at','timediff_founded_series_a','time_diff_series_a_now',
                                         'participants_a', 'raised_amount_usd_a', 'rounds_before_a', 'mean_comp_worked_before',
                                         'founder_count', 'degree_count','graduate', 'undergrad','professional', 'MBA_bool',
                                         'cs_bool', 'phd_bool', 'top_20_bool', 'mean_comp_founded_before', 'female_ratio','exit', 'target']
