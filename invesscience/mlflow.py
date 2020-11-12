@@ -105,7 +105,9 @@ class Trainer(object):
             model = DecisionTreeClassifier(class_weight ='balanced')
 
         elif estimator == "RandomForestClassifier":
-            model = RandomForestClassifier()
+            model = RandomForestClassifier(bootstrap=True, ccp_alpha=4.795609695177735,
+                                                     criterion='entropy', max_depth=4,
+                                            max_features='sqrt', max_samples=0.21073053471890313, n_estimators=254)
             self.model_params = {  # 'n_estimators': [int(x) for x in np.linspace(start = 50, stop = 200, num = 10)],
                 'max_features': ['auto']}
             # 'max_depth' : [int(x) for x in np.linspace(10, 110, num = 11)]}
@@ -123,22 +125,34 @@ class Trainer(object):
             model = AdaBoostClassifier()
 
         elif estimator =='voting':
-            model_SGDC = SGDClassifier()
 
-            model_SVC = SVC(C=1.2453202919192343, coef0=1.9383630487762569, kernel='sigmoid', probability =True)
+            model_1 = SGDClassifier(alpha=0.30172076992185237, class_weight='balanced', early_stopping=True,
+                        eta0=0.0001, learning_rate='constant', loss='log', n_iter_no_change=10, validation_fraction=0.3)
+            model_2 = SGDClassifier(alpha=0.5471642701893039, class_weight='balanced', early_stopping=True,
+                         eta0=0.0001, loss='modified_huber', n_iter_no_change=10, validation_fraction=0.3)
 
-            model_random = RandomForestClassifier(bootstrap=False, ccp_alpha=4.795609695177735,
-                                                     criterion='entropy', max_depth=4,
-                                            max_features='sqrt', max_samples=0.21073053471890313, n_estimators=254)
+            model_4 = SGDClassifier(alpha=0.14886018175436921, class_weight='balanced', early_stopping=True,
+                                eta0=0.0001, loss='modified_huber', n_iter_no_change=10, validation_fraction=0.3)
+            model_5 = SVC(C=7.661584366688032, class_weight='balanced', degree=1, gamma=2.8796293228415792, kernel='poly', probability =True)
+            model_6 = SVC(C=6.359827845516727, class_weight='balanced', gamma=4.6924698110083485, kernel='linear', probability =True)
 
-            model = VotingClassifier(estimators=[('sgdc', model_SGDC),
-                                                ('random', model_random),
-                                                ('svc', model_SVC)]
 
-                                ,voting='hard')
+
+            model = VotingClassifier(estimators=[('model1', model_1),
+                                                ('model2', model_2),
+                                                ('model4', model_4),
+                                                ('model5', model_5),
+                                                ('model6', model_6)]
+                                ,voting='soft')
+
+
         elif estimator =='SGDC':
             model = SGDClassifier(class_weight ='balanced')
 
+#[1,2,3,4,5,6] --> 0,454
+#[5,6,2,1,6,4] --> 0,361
+#[8,7,6,5,4,3]
+#[6,5,7,4,8,3]
 
 
         #else:
@@ -478,7 +492,7 @@ if __name__ == "__main__":
     warnings.simplefilter(action='ignore', category=FutureWarning)
 
     # Get and clean data
-    experiment = "Invesscience_final_batch_#463"
+    experiment = "Invesscience_batch_#463"
 
 
     #Change the reference HERE !!!
@@ -488,59 +502,62 @@ if __name__ == "__main__":
     year= '2009'
     target_to_drop = 'exit'
 
+    df = get_data_filled(reference=reference,target_to_drop =target_to_drop , year = year)
+    y_train = df["target"]
+    X_train = df.drop(columns =['target']) #Change when we have categorical var
 
-    for i in range(1):
-
-
-        for estimator_iter in [#'voting'
-                              #  'SGDC'
-                               'xgboost',
-                                #'GradientBoostingClassifier',
-                                #'LogisticRegression'
-                                #'SVC',
-                                 #'adaboost',
-                                 #'DecisionTree'
-                                 #'RandomForestClassifier'
-                                 ]:
-
-    #ADABOOST : DecisionTree()
-
-            params = dict(tag_description=f'[2.-SELECT {i}][{estimator_iter}][{year}][{reference}]', reference =reference, year = year ,estimator = estimator_iter,
-                estimator_params ={},
-                local=False, split=True,  mlflow = True, experiment_name=experiment,
-                imputer= 'SimpleImputer', imputer_params = {'strategy': 'most_frequent'},
-                  grid_search_choice= False, smote=True) #agregar
-
-#'learning_rate':0.478977150664321, 'max_depth':5, 'min_child_weight':9, 'n_estimators':119,'nthread':12, 'num_parallel_tree':1, 'random_state':22,  'scale_pos_weight':4, 'seed':22,'subsample':0.5439148763175726, 'tree_method':'exact'},
-
-#'n_neighbors':21, 'weights': 'distance'
-
-            print("############   Loading Data   ############")
-
-            df = get_data_filled(reference=reference,target_to_drop =target_to_drop , year = year)
-            #df= df[df.country_code=='USA']
-            print(df.shape)
+    for i in range(1,7):
+        for j in range(1,7):
+            for k in range(1,7):
+                for m in range(1,7):
+                    for n in range(1,7):
 
 
+                            for estimator_iter in ['voting'
+                                                  #  'SGDC'
+                                                   #'xgboost',
+                                                    #'GradientBoostingClassifier',
+                                                    #'LogisticRegression'
+                                                    #'SVC',
+                                                     #'adaboost',
+                                                     #'DecisionTree'
+                                                    # 'RandomForestClassifier'
+                                                     ]:
+
+                        #ADABOOST : DecisionTree()
+
+                                params = dict(tag_description=f'r[Weights][{estimator_iter}][{year}][{reference}]', reference =reference, year = year ,estimator = estimator_iter,
+                                    estimator_params ={'weights' : [i,j,k,m,n] },
+                                    local=False, split=True,  mlflow = True, experiment_name=experiment,
+                                    imputer= 'SimpleImputer', imputer_params = {'strategy': 'most_frequent'},
+                                      grid_search_choice= False, smote=True) #agregar
+
+                    #'learning_rate':0.478977150664321, 'max_depth':5, 'min_child_weight':9, 'n_estimators':119,'nthread':12, 'num_parallel_tree':1, 'random_state':22,  'scale_pos_weight':4, 'seed':22,'subsample':0.5439148763175726, 'tree_method':'exact'},
+
+                    #'n_neighbors':21, 'weights': 'distance'
+
+                                print("############   Loading Data   ############")
+
+
+                                #df= df[df.country_code=='USA']
 
 
 
-            y_train = df["target"]
-            X_train = df.drop(columns =['target']) #Change when we have categorical var
-            del df
-            print("shape: {}".format(X_train.shape))
-            print("size: {} Mb".format(X_train.memory_usage().sum() / 1e6))
-            # Train and save model, locally and
-            t = Trainer(X=X_train, y=y_train, **params)
-            del X_train, y_train
+
+                                del df
+                                print("shape: {}".format(X_train.shape))
+                                print("size: {} Mb".format(X_train.memory_usage().sum() / 1e6))
+                                # Train and save model, locally and
+                                t = Trainer(X=X_train, y=y_train, **params)
+                                del X_train, y_train
 
 
-            print(colored("############  Training model   ############", "red"))
-            t.train()
-            print(colored("############  Evaluating model ############", "blue"))
-            t.evaluate()
-            print(colored("############   Saving model    ############", "green"))
-            t.save_model()
+                                print(colored("############  Training model   ############", "red"))
+                                t.train()
+                                print(colored("############  Evaluating model ############", "blue"))
+                                t.evaluate()
+                                print(colored("############   Saving model    ############", "green"))
+                                t.save_model()
 
 
  ################------------Params founded ------#####################################################################
