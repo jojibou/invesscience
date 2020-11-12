@@ -148,21 +148,8 @@ class Trainer(object):
                                 ,voting='soft')
 
 
-
-
-#[3, 1, 3, 2, 3]
-#[6, 2, 5, 3, 4]
-#[7, 4, 5, 3, 5]
-
-
         elif estimator =='SGDC':
             model = SGDClassifier(class_weight ='balanced')
-
-#[1,2,3,4,5,6] --> 0,454
-#[5,6,2,1,6,4] --> 0,361
-#[8,7,6,5,4,3]
-#[6,5,7,4,8,3]
-
 
         #else:
             #model = Lasso()
@@ -274,7 +261,6 @@ class Trainer(object):
             categorical_features_2 = ['participants_a', 'raised_amount_usd_a', 'rounds_before_a', 'mean_comp_worked_before',  'founder_count', 'degree_count'] # impute first, after ordinals
 
             booleans_features = ['graduate', 'undergrad','professional', 'MBA_bool', 'cs_bool', 'phd_bool', 'top_20_bool', 'mean_comp_founded_before', 'female_ratio'] # ordinals/binaries
-
 
 
 
@@ -534,7 +520,7 @@ if __name__ == "__main__":
 
 
 
-    for i in range(200):
+    for i in range(50):
         for estimator_iter in ['voting'
                               #  'SGDC'
                                #'xgboost',
@@ -562,11 +548,6 @@ if __name__ == "__main__":
 
             #df= df[df.country_code=='USA']
 
-
-
-#[3, 1, 3, 2, 3]
-#[6, 2, 5, 3, 4]
-#[7, 4, 5, 3, 5]
             #del df
             print("shape: {}".format(X_train.shape))
             print("size: {} Mb".format(X_train.memory_usage().sum() / 1e6))
