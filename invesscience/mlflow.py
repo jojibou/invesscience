@@ -11,43 +11,33 @@ from mlflow.tracking import MlflowClient
 from psutil import virtual_memory
 from sklearn.compose import ColumnTransformer
 from sklearn.svm import SVC
-from sklearn.ensemble import GradientBoostingRegressor,RandomForestClassifier
-from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import GradientBoostingRegressor,RandomForestClassifier, VotingClassifier, AdaBoostClassifier , GradientBoostingClassifier
+from sklearn.linear_model import LogisticRegression, SGDClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, RandomizedSearchCV, GridSearchCV
 from sklearn.pipeline import Pipeline, make_pipeline
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
-from termcolor import colored
-from xgboost import XGBRegressor
-from invesscience.utils import compute_f1, simple_time_tracker, compute_precision, get_data_filled
-from invesscience.joanna_merge import get_training_data
-from sklearn.compose import ColumnTransformer
 from sklearn.impute import KNNImputer,SimpleImputer
-
-from sklearn.preprocessing import OneHotEncoder, MinMaxScaler, RobustScaler,StandardScaler
-
-from sklearn.ensemble import RandomForestClassifier, VotingClassifier, AdaBoostClassifier , GradientBoostingClassifier
-from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import RandomizedSearchCV, GridSearchCV
-
-from scipy.stats import uniform, randint
-from xgboost import XGBClassifier
-from sklearn.linear_model import SGDClassifier
-from sklearn.preprocessing import OrdinalEncoder
-from sklearn.preprocessing import Binarizer
-from imblearn.pipeline import make_pipeline
-from imblearn.over_sampling import SMOTE, ADASYN
-from imblearn.pipeline import Pipeline as Pipeline_imb
+from sklearn.preprocessing import OneHotEncoder, MinMaxScaler, RobustScaler,StandardScaler, Binarizer, OrdinalEncoder
 from sklearn.inspection import permutation_importance
 from sklearn.naive_bayes import GaussianNB
+from termcolor import colored
+from xgboost import XGBRegressor, XGBClassifier
+from invesscience.utils import compute_f1, simple_time_tracker, compute_precision, get_data_filled
+from invesscience.joanna_merge import get_training_data
+from scipy.stats import uniform, randint
+from imblearn.pipeline import make_pipeline
+from imblearn.pipeline import Pipeline as Pipeline_imb
+from imblearn.over_sampling import SMOTE, ADASYN
+
 
 
 
 MLFLOW_URI = "https://mlflow.lewagon.co/"
 
 
-class Trainer(object):
+class Trainer (object):
+    
     ESTIMATOR = "LogisticRegression"
     EXPERIMENT_NAME = "Invesscience_batch_#463"
     IMPUTER = 'SimpleImputer'
@@ -97,8 +87,10 @@ class Trainer(object):
         estimator = self.kwargs.get("estimator", self.ESTIMATOR)
         if estimator == "LogisticRegression":
             model = LogisticRegression(class_weight= 'balanced')
+            
         elif estimator == "SVC":
             model = SVC(class_weight='balanced')
+            
         elif estimator == "KNeighborsClassifier":
             model = KNeighborsClassifier()
         elif estimator == "DecisionTree":
@@ -147,28 +139,12 @@ class Trainer(object):
                                                 ('model6a', model_6)]
                                 ,voting='soft')
 
-
-
-
-#[3, 1, 3, 2, 3]
-#[6, 2, 5, 3, 4]
-#[7, 4, 5, 3, 5]
-
-
         elif estimator =='SGDC':
             model = SGDClassifier(class_weight ='balanced')
 
-#[1,2,3,4,5,6] --> 0,454
-#[5,6,2,1,6,4] --> 0,361
-#[8,7,6,5,4,3]
-#[6,5,7,4,8,3]
 
 
-        #else:
-            #model = Lasso()
-
-
-        estimator_params = self.kwargs.get("estimator_params", {}) #Dictionary
+        estimator_params = self.kwargs.get( "estimator_params", {} ) #Dictionary
         self.mlflow_log_param("estimator", estimator)
         model.set_params(**estimator_params)
         print(colored(model.__class__.__name__, "red"))
@@ -494,8 +470,11 @@ class Trainer(object):
         self.mlflow_log_param("cpus", cpus)
 
 
-
-
+############################################################################################################################################
+############################################################################################################################################
+############################################------------ Correr el archivo ------###########################################################
+############################################################################################################################################
+############################################################################################################################################
 
 if __name__ == "__main__":
     warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -546,11 +525,6 @@ if __name__ == "__main__":
 
             #df= df[df.country_code=='USA']
 
-
-
-#[3, 1, 3, 2, 3]
-#[6, 2, 5, 3, 4]
-#[7, 4, 5, 3, 5]
             #del df
             print("shape: {}".format(X_train.shape))
             print("size: {} Mb".format(X_train.memory_usage().sum() / 1e6))
@@ -569,23 +543,3 @@ if __name__ == "__main__":
 
  ################------------Params founded ------#####################################################################
 
-            #High precision more variability
-
-            #Best DecisionTree
-            # DecisionTreeClassifier(class_weight='balanced', max_depth=3.853659650929652, max_features='log2',
-             #min_samples_split=0.2130615824774026, min_weight_fraction_leaf=0.40855752460926786
-
-             #Best SGDC ()
-             #SGDClassifier
-             #estimator_params ={'loss': 'epsilon_insensitive' ,'class_weight': 'balanced',alpha=0.25302306090332494,
-             #class_weight='balanced', early_stopping=True, epsilon=0.7399967340475004, eta0=0.0001,
-
-             #learning_rate='constant', loss='huber', n_iter_no_change=10, validation_fraction=0.3
-
-            #xgboost
-            #xgboost(learning_rate=0.478977150664321, max_delta_step=0, max_depth=5, min_child_weight=9, missing=nan, monotone_constraints='()', n_estimators=119, n_jobs=12, nthread=12, num_parallel_tree=1, random_state=22, reg_alpha=0, reg_lambda=1, scale_pos_weight=4, seed=22,
-            #subsample=0.5439148763175726, tree_method='exact, verbosity=None)
-
-
-#learning_rate=0.478977150664321, max_depth=5, min_child_weight=9,  n_estimators=119, nthread=12, num_parallel_tree=1, random_state=22, scale_pos_weight=4, seed=22,
- #           subsample=0.5439148763175726, tree_method='exact'

@@ -16,7 +16,6 @@ def compute_precision_macro(y_pred, y_true):
 
 def compute_precision(y_pred, y_true):
 
-
     return precision_score(y_true, y_pred)
 
 def compute_f1_macro(y_pred, y_true):
